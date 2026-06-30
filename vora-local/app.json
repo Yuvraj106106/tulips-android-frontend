@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "Tulips",
+    "slug": "app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "tulips",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.yuviiix.tulip",
+      "enableLargeHeap": true,
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow Tulip to use the microphone to listen to your voice.",
+          "speechRecognitionPermission": "Allow Tulip to use speech recognition.",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox"
+          ]
+        }
+      ],
+      "expo-asset"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6152009e-57f8-4d41-b75b-588ddf6b63e7"
+      }
+    }
+  }
+}
