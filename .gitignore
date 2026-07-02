@@ -1,0 +1,10 @@
+node_modules
+.expo/
+cloudflared
+metro.log
+android/app/build/
+android/.gradle/
+android/build/
+android/app/src/main/assets/*.bundle
+*.apk
+.gradle/
