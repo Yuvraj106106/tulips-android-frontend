@@ -98,6 +98,23 @@ const ChatScreen: React.FC = () => {
         setSttError(event.message || 'Speech recognition error');
         setIsListening(false);
       });
+      ExpoSpeechRecognitionModule.addListener('nomatch', (event: any) => {
+        console.warn('STT nomatch:', event);
+        setSttError('Samajh nahi aaya, dobara try karo.');
+        setIsListening(false);
+      });
+      ExpoSpeechRecognitionModule.addListener('start', (event: any) => {
+        console.warn('STT start:', event);
+      });
+      ExpoSpeechRecognitionModule.addListener('end', (event: any) => {
+        console.warn('STT end:', event);
+      });
+      ExpoSpeechRecognitionModule.addListener('speechstart', (event: any) => {
+        console.warn('STT speechstart:', event);
+      });
+      ExpoSpeechRecognitionModule.addListener('speechend', (event: any) => {
+        console.warn('STT speechend:', event);
+      });
     }
     return () => {
       if (listenerRef.current) {
@@ -170,7 +187,7 @@ const ChatScreen: React.FC = () => {
     try {
       await ExpoSpeechRecognitionModule.start({
         lang: 'en-IN',
-        interimResults: false,
+        interimResults: true,
         continuous: false,
       });
       setIsListening(true);
