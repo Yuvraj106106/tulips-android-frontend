@@ -1,6 +1,7 @@
 import { BACKEND_URL } from '../constants/config';
 
 export async function sendMessage(message: string, conversationId: string) {
+  console.log("🚀 sendMessage CALLED with:", message);
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 60000);
