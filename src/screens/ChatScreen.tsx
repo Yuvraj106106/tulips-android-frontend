@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Text, PermissionsAndroid, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Text, PermissionsAndroid, Platform, Alert } from 'react-native';
 import MessageBubble from '../components/MessageBubble';
 import InputBar from '../components/InputBar';
+import FloatingBubble from '../services/FloatingBubble';
 import { sendMessage } from '../services/api';
 import { playBase64Audio, stopAudio } from '../services/audioPlayer';
 import { ExpoSpeechRecognitionModule, ExpoSpeechRecognitionModuleEmitter } from 'expo-speech-recognition';
@@ -28,6 +29,7 @@ const ChatScreen: React.FC = () => {
   ]);
   const [mode, setMode] = useState<'text' | 'voice'>('text');
   const [isListening, setIsListening] = useState(false);
+  const [isBubbleEnabled, setIsBubbleEnabled] = useState(false);
   const [sttError, setSttError] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const modeRef = useRef(mode);
@@ -39,6 +41,16 @@ const ChatScreen: React.FC = () => {
   useEffect(() => {
     modeRef.current = mode;
   }, [mode]);
+
+  useEffect(() => {
+    const checkService = async () => {
+      if (Platform.OS === 'android') {
+        const running = await FloatingBubble.isServiceRunning();
+        setIsBubbleEnabled(running);
+      }
+    };
+    checkService();
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -237,20 +249,59 @@ const ChatScreen: React.FC = () => {
     }
   };
 
+  const toggleFloatingBubble = async () => {
+    if (Platform.OS !== 'android') {
+      Alert.alert('Not Supported', 'Floating bubble is only available on Android.');
+      return;
+    }
+
+    if (isBubbleEnabled) {
+      await FloatingBubble.stopBubble();
+      setIsBubbleEnabled(false);
+    } else {
+      const hasPermission = await FloatingBubble.isPermissionGranted();
+      if (hasPermission) {
+        try {
+          await FloatingBubble.startBubble();
+          setIsBubbleEnabled(true);
+        } catch (e) {
+          Alert.alert('Error', 'Failed to start floating bubble.');
+        }
+      } else {
+        Alert.alert(
+          'Permission Required',
+          'Tulip needs "Display over other apps" permission for the floating bubble. Enable it in settings?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Settings', onPress: () => FloatingBubble.requestPermission() },
+          ]
+        );
+      }
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.modeToggleContainer}>
+      <View style={styles.topBar}>
+        <View style={styles.modeToggleContainer}>
+          <TouchableOpacity
+            style={[styles.modeButton, mode === 'text' && styles.activeMode]}
+            onPress={() => setMode('text')}
+          >
+            <Text style={[styles.modeButtonText, mode === 'text' && styles.activeModeText]}>Text</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modeButton, mode === 'voice' && styles.activeMode]}
+            onPress={() => setMode('voice')}
+          >
+            <Text style={[styles.modeButtonText, mode === 'voice' && styles.activeModeText]}>Voice</Text>
+          </TouchableOpacity>
+        </View>
         <TouchableOpacity
-          style={[styles.modeButton, mode === 'text' && styles.activeMode]}
-          onPress={() => setMode('text')}
+          style={[styles.bubbleToggle, isBubbleEnabled && styles.bubbleActive]}
+          onPress={toggleFloatingBubble}
         >
-          <Text style={[styles.modeButtonText, mode === 'text' && styles.activeModeText]}>Text</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.modeButton, mode === 'voice' && styles.activeMode]}
-          onPress={() => setMode('voice')}
-        >
-          <Text style={[styles.modeButtonText, mode === 'voice' && styles.activeModeText]}>Voice</Text>
+          <Text style={styles.bubbleToggleText}>{isBubbleEnabled ? '🫧 On' : '🫧 Off'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -299,9 +350,31 @@ const ChatScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0a1a' },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#111',
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#222',
+  },
   modeToggleContainer: {
     flexDirection: 'row', justifyContent: 'center', paddingVertical: 8,
-    backgroundColor: '#111', borderBottomWidth: 1, borderBottomColor: '#222',
+  },
+  bubbleToggle: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 15,
+    backgroundColor: '#222',
+  },
+  bubbleActive: {
+    backgroundColor: '#FFBF00',
+  },
+  bubbleToggleText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   modeButton: {
     paddingVertical: 8, paddingHorizontal: 24, borderRadius: 20,
