@@ -62,15 +62,21 @@ class FloatingBubbleService : Service() {
     }
 
     private fun addFloatingBubble() {
-        floatingBubble = ImageView(this).apply {
-            setImageResource(android.R.drawable.ic_menu_help) // Placeholder icon
-            setBackgroundResource(android.R.drawable.screen_background_light_transparent)
-            // Branding color #FFBF00 would be better applied as a tint if possible
-            // setColorFilter(android.graphics.Color.parseColor("#FFBF00"))
+        val sizeInDp = 60
+        val scale = resources.displayMetrics.density
+        val sizeInPx = (sizeInDp * scale + 0.5f).toInt()
+
+        val circleDrawable = android.graphics.drawable.GradientDrawable().apply {
+            shape = android.graphics.drawable.GradientDrawable.OVAL
+            setColor(android.graphics.Color.parseColor("#FFBF00"))
         }
 
-        // Apply branding color
-        floatingBubble?.setColorFilter(android.graphics.Color.parseColor("#FFBF00"))
+        floatingBubble = ImageView(this).apply {
+            setImageResource(android.R.drawable.ic_menu_help)
+            background = circleDrawable
+            setPadding(sizeInPx / 4, sizeInPx / 4, sizeInPx / 4, sizeInPx / 4)
+            setColorFilter(android.graphics.Color.parseColor("#0a0a1a"))
+        }
 
         val layoutType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -79,8 +85,8 @@ class FloatingBubbleService : Service() {
         }
 
         params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            sizeInPx,
+            sizeInPx,
             layoutType,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
