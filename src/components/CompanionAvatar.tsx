@@ -43,47 +43,80 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
     scene.add(sphere);
   };
 
-  const applyColorSpace = (texture: THREE.Texture) => {
+  const finalizeTexture = (texture: THREE.Texture) => {
     if ('colorSpace' in texture) {
       (texture as any).colorSpace = (THREE as any).SRGBColorSpace ?? (texture as any).colorSpace;
     } else if ('encoding' in texture) {
       (texture as any).encoding = (THREE as any).sRGBEncoding ?? (texture as any).encoding;
     }
+    // Non-power-of-two safety net: some source textures (e.g. krishna_hq's
+    // 1920x1920 diffuse map) aren't power-of-two, and WebGL1 (what expo-gl
+    // provides) silently drops such textures under the default
+    // RepeatWrapping/mipmap filtering. Clamp + non-mipmap filtering makes
+    // any texture size valid, POT or not.
+    texture.wrapS = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = false;
     texture.needsUpdate = true;
   };
 
-  // Some three.js versions default freshly-loaded textures to the wrong
-  // color space, which can make correctly-loaded PBR textures look washed
-  // out or flat even after they've actually arrived. This normalizes color
-  // space and forces the GPU to re-upload once the image data is in.
-  //
-  // If `overrideTexture` is provided, it's applied to every material's map
-  // directly. If it's NOT provided (no textureAsset configured, e.g. the
-  // current placeholder model), every material gets tinted with the
-  // companion's flat themeColor instead of being left at its default white
-  // -- since these models rely entirely on embedded textures for color and
-  // would otherwise render as a blank white shape.
-  const normalizeMaterials = (model: THREE.Object3D, overrideTexture?: THREE.Texture) => {
-    model.traverse((child: any) => {
-      if (!child.isMesh) return;
-      if (child.geometry) {
-        child.geometry.computeVertexNormals();
+  // Loads (with caching, since several materials can share one image) and
+  // applies textures to a model's materials, in priority order:
+  //   1. materialTextureMap[materialName] — per-material override
+  //   2. textureAsset — one shared texture applied to every material
+  //   3. flat themeColor tint — fallback when no texture is configured
+  //      (GLTFLoader can't decode embedded GLB textures under React Native,
+  //      so untextured materials would otherwise render blank white)
+  const applyMaterials = async (model: THREE.Object3D) => {
+    const textureCache = new Map<number, THREE.Texture>();
+    const loadCached = async (assetModule: number): Promise<THREE.Texture> => {
+      if (textureCache.has(assetModule)) return textureCache.get(assetModule)!;
+      const tex = await loadTextureAsync({ asset: assetModule });
+      finalizeTexture(tex);
+      textureCache.set(assetModule, tex);
+      return tex;
+    };
+
+    let sharedTexture: THREE.Texture | undefined;
+    if (config.textureAsset) {
+      try {
+        sharedTexture = await loadCached(config.textureAsset);
+      } catch (e) {
+        console.error(`Shared texture load failed for ${config.id}:`, e);
       }
-      if (!child.material) return;
+    }
+
+    const meshes: any[] = [];
+    model.traverse((child: any) => {
+      if (child.isMesh) meshes.push(child);
+    });
+
+    for (const child of meshes) {
+      if (child.geometry) child.geometry.computeVertexNormals();
+      if (!child.material) continue;
       const materials = Array.isArray(child.material) ? child.material : [child.material];
-      materials.forEach((mat: any) => {
-        if (overrideTexture) {
-          mat.map = overrideTexture;
+      for (const mat of materials) {
+        const perMaterialAsset = config.materialTextureMap?.[mat.name];
+        if (perMaterialAsset) {
+          try {
+            mat.map = await loadCached(perMaterialAsset);
+          } catch (e) {
+            console.error(`Texture load failed for material "${mat.name}":`, e);
+          }
+        } else if (sharedTexture) {
+          mat.map = sharedTexture;
         }
-        if (mat.map) {
-          applyColorSpace(mat.map);
-        } else {
-          mat.map = null;
+
+        if (!mat.map) {
           mat.color = new THREE.Color(config.themeColor);
         }
         mat.needsUpdate = true;
-      });
-    });
+      }
+    }
+
+    return textureCache.size > 0;
   };
 
   const onContextCreate = async (gl: WebGLRenderingContext) => {
@@ -105,8 +138,6 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
       0.1,
       100
     );
-    camera.position.set(0, 0.2, 3.5);
-    camera.lookAt(0, 0.15, 0);
     cameraRef.current = camera;
 
     // Lighting tuned for PBR materials (the model already has its own textures/colors baked in)
@@ -147,54 +178,44 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
 
       const model: THREE.Object3D = gltf.scene ?? gltf;
 
-      // Embedded-texture GLBs (both the original krishna_hq.glb and this
-      // placeholder) can't have their textures decoded under React Native
-      // (Blob-from-ArrayBuffer isn't supported), so GLTFLoader logs
-      // "Couldn't load texture" and leaves materials without a map. If a
-      // standalone texture file is configured separately, load and apply it
-      // here (file URI -> GPU, no Blob step); otherwise normalizeMaterials
-      // below falls back to a flat themeColor tint.
-      let overrideTexture: THREE.Texture | undefined;
-      if (config.textureAsset) {
-        try {
-          overrideTexture = await loadTextureAsync({ asset: config.textureAsset });
-          // Non-power-of-two safety: see git history for why this matters.
-          overrideTexture.wrapS = THREE.ClampToEdgeWrapping;
-          overrideTexture.wrapT = THREE.ClampToEdgeWrapping;
-          overrideTexture.minFilter = THREE.LinearFilter;
-          overrideTexture.magFilter = THREE.LinearFilter;
-          overrideTexture.generateMipmaps = false;
-          overrideTexture.needsUpdate = true;
-        } catch (texErr) {
-          console.error(`Manual texture load failed for ${config.id}:`, texErr);
-        }
-      }
+      const texturedSomething = await applyMaterials(model);
 
-      normalizeMaterials(model, overrideTexture);
-
-      // Auto-center and scale to fit the view regardless of the
-      // model's original export scale/origin.
+      // Auto-center and scale to fit the view regardless of the model's
+      // original export scale/origin — this makes framing work for any
+      // companion model, not just one specific export's proportions.
       const box = new THREE.Box3().setFromObject(model);
       const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
       model.position.sub(center);
 
       const maxDim = Math.max(size.x, size.y, size.z);
-      if (maxDim > 0) {
-        const targetSize = 2.2;
-        const scale = targetSize / maxDim;
-        model.scale.setScalar(scale);
-      }
-      model.position.y += 0.4;
-
+      const targetSize = 2.2;
+      const scale = maxDim > 0 ? targetSize / maxDim : 1;
+      model.scale.setScalar(scale);
       scene.add(model);
+
+      // Frame the upper portion (head/shoulders) rather than the dead
+      // center of the whole body, and pick a camera distance derived from
+      // the model's actual (post-scale) height so this works regardless of
+      // a given model's proportions.
+      const scaledHeight = size.y * scale;
+      const lookY = scaledHeight * 0.22;
+      const halfFovRad = (camera.fov * Math.PI) / 360;
+      const framedHeight = scaledHeight * 0.6;
+      const distance = framedHeight / 2 / Math.tan(halfFovRad) + 0.6;
+
+      camera.position.set(0, lookY, distance);
+      camera.lookAt(0, lookY, 0);
+
       console.log(
-        `✅ ${config.name} model loaded (companion: ${config.id}, manualTexture: ${!!overrideTexture})`
+        `✅ ${config.name} model loaded (companion: ${config.id}, textured: ${texturedSomething})`
       );
       renderOnce();
     } catch (e) {
       console.error(`Model load error for ${config.id}, falling back to sphere:`, e);
       if (mounted.current) {
+        camera.position.set(0, 0, 3.5);
+        camera.lookAt(0, 0, 0);
         renderFallbackSphere(scene);
         renderOnce();
       }
