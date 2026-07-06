@@ -121,6 +121,17 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
         if (!mat.map) {
           mat.color = new THREE.Color(config.themeColor);
         }
+
+        // Force a matte look regardless of the model's exported PBR
+        // metalness/roughness values. Without an environment map (which
+        // expo-gl/WebGL1 doesn't give us here), a high-metalness material
+        // renders as a near-black silhouette with only tiny white specular
+        // highlights from our directional lights — looks broken even when
+        // the color/texture is applied correctly underneath. Flattening
+        // metalness to 0 makes the diffuse color/texture actually visible.
+        if ('metalness' in mat) mat.metalness = 0;
+        if ('roughness' in mat) mat.roughness = 0.8;
+
         mat.needsUpdate = true;
       }
     }
