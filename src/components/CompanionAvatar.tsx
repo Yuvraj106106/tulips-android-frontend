@@ -155,6 +155,19 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
       if (config.textureAsset) {
         try {
           overrideTexture = await loadTextureAsync({ asset: config.textureAsset });
+          // The source texture image is not a power-of-two size (e.g. 1920x1920).
+          // Under WebGL1 (what expo-gl provides), a non-power-of-two texture with
+          // the default RepeatWrapping/mipmap filtering is invalid and many GPU
+          // drivers silently drop it instead of erroring -- which looks exactly
+          // like "texture never applied" (flat white), even though the JS-side
+          // load succeeded. Forcing clamp-to-edge wrapping and a non-mipmap
+          // filter makes an NPOT texture valid under WebGL1.
+          overrideTexture.wrapS = THREE.ClampToEdgeWrapping;
+          overrideTexture.wrapT = THREE.ClampToEdgeWrapping;
+          overrideTexture.minFilter = THREE.LinearFilter;
+          overrideTexture.magFilter = THREE.LinearFilter;
+          overrideTexture.generateMipmaps = false;
+          overrideTexture.needsUpdate = true;
         } catch (texErr) {
           console.error(`Manual texture load failed for ${config.id}:`, texErr);
         }
