@@ -1,5 +1,7 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import RNTextureLoader from './RNTextureLoader';
+
+console.log('🔧 GLTFLoaderRN.js (legacy FileSystem API) loaded');
 
 function encodeBase64( arrayBuffer ) {
 
