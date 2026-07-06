@@ -13,7 +13,15 @@ export default class RNTextureLoader extends THREE.TextureLoader {
       url,
       (width, height) => {
         texture.image = {
-          data: { uri: url },
+          // expo-gl's native isDataTexture path expects a native-asset-shaped
+          // object here (matching what expo-three's own TextureLoader passes,
+          // i.e. an object with a `localUri` field) — NOT a bare `{ uri }`.
+          // With `uri` instead of `localUri`, the native side silently fails
+          // to resolve the file and binds an empty/garbage texture, which is
+          // why the model rendered as solid black with white specular dots
+          // even though geometry, lighting, and the metalness/roughness
+          // overrides were all correct.
+          data: { localUri: url },
           width,
           height,
         };
