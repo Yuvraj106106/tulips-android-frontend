@@ -28,20 +28,18 @@ export const companions: Partial<Record<CompanionId, CompanionConfig>> = {
   krishna: {
     id: 'krishna',
     name: 'Krishna',
-    // TEMP: using a placeholder model while the real krishna_hq.glb's
-    // texture pipeline is worked out separately (see git history). This
-    // placeholder's textures were extracted from its own embedded PNGs
-    // (already power-of-two, 512x512 — unlike krishna_hq's 1920x1920) and
-    // are applied per-material below.
-    modelAsset: require('../../assets/krishna_placeholder.glb'),
+    // Real high-quality model. Now that GLTFLoaderRN correctly decodes
+    // embedded GLB textures under React Native (see PR #5 + the
+    // expo-file-system/legacy fix), this model's own embedded 1920x1920
+    // diffuse texture loads automatically — no manual materialTextureMap
+    // needed anymore, unlike the placeholder model this replaces.
+    modelAsset: require('../../assets/krishna_hq.glb'),
     themeColor: '#FFBF00',
     backgroundColor: '#0a0a1a',
-    materialTextureMap: {
-      Krishna_2_armour_1_No_Shadow: require('../../assets/krishna_dummy_tex_0.png'),
-      Krishna_2Armour2_No_Shadow: require('../../assets/krishna_dummy_tex_0.png'),
-      Ram_UI: require('../../assets/krishna_dummy_tex_2.png'),
-      eyelash_legal: require('../../assets/krishna_dummy_tex_3.png'),
-    },
+    // Fallback only: if embedded-texture decode ever fails for this
+    // asset for some reason, uncomment this to force the same texture
+    // in manually instead.
+    // textureAsset: require('../../assets/krishna_texture_diffuse.webp'),
   },
   // rama, buddha, osho: add here in Phase 6 once their GLB assets exist.
 };
