@@ -58,8 +58,11 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
   // space and forces the GPU to re-upload once the image data is in.
   //
   // If `overrideTexture` is provided, it's applied to every material's map
-  // directly — this is the manual-texture path used when the GLB's own
-  // embedded textures can't be decoded in React Native (see config.ts).
+  // directly. If it's NOT provided (no textureAsset configured, e.g. the
+  // current placeholder model), every material gets tinted with the
+  // companion's flat themeColor instead of being left at its default white
+  // -- since these models rely entirely on embedded textures for color and
+  // would otherwise render as a blank white shape.
   const normalizeMaterials = (model: THREE.Object3D, overrideTexture?: THREE.Texture) => {
     model.traverse((child: any) => {
       if (!child.isMesh) return;
@@ -74,6 +77,9 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
         }
         if (mat.map) {
           applyColorSpace(mat.map);
+        } else {
+          mat.map = null;
+          mat.color = new THREE.Color(config.themeColor);
         }
         mat.needsUpdate = true;
       });
@@ -141,27 +147,18 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
 
       const model: THREE.Object3D = gltf.scene ?? gltf;
 
-      // Krishna's GLB embeds its textures inside the binary file itself.
-      // GLTFLoader tries to extract those and build a Blob to decode them as
-      // an image, but React Native's Blob implementation can't create a Blob
-      // from raw ArrayBuffer/ArrayBufferView data — that always fails
-      // (logged as "Couldn't load texture"), leaving the mesh flat white.
-      //
-      // Workaround: if a standalone texture file is configured, load it
-      // through expo-three's TextureLoader (file URI -> GPU, no Blob step)
-      // and apply it to every material directly, overriding whatever (empty)
-      // map GLTFLoader ended up with.
+      // Embedded-texture GLBs (both the original krishna_hq.glb and this
+      // placeholder) can't have their textures decoded under React Native
+      // (Blob-from-ArrayBuffer isn't supported), so GLTFLoader logs
+      // "Couldn't load texture" and leaves materials without a map. If a
+      // standalone texture file is configured separately, load and apply it
+      // here (file URI -> GPU, no Blob step); otherwise normalizeMaterials
+      // below falls back to a flat themeColor tint.
       let overrideTexture: THREE.Texture | undefined;
       if (config.textureAsset) {
         try {
           overrideTexture = await loadTextureAsync({ asset: config.textureAsset });
-          // The source texture image is not a power-of-two size (e.g. 1920x1920).
-          // Under WebGL1 (what expo-gl provides), a non-power-of-two texture with
-          // the default RepeatWrapping/mipmap filtering is invalid and many GPU
-          // drivers silently drop it instead of erroring -- which looks exactly
-          // like "texture never applied" (flat white), even though the JS-side
-          // load succeeded. Forcing clamp-to-edge wrapping and a non-mipmap
-          // filter makes an NPOT texture valid under WebGL1.
+          // Non-power-of-two safety: see git history for why this matters.
           overrideTexture.wrapS = THREE.ClampToEdgeWrapping;
           overrideTexture.wrapT = THREE.ClampToEdgeWrapping;
           overrideTexture.minFilter = THREE.LinearFilter;
