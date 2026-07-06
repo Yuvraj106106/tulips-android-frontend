@@ -1,9 +1,14 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { loadSettings } from '../services/settings';
+import { COLORS } from '../constants/theme';
 
 type RootStackParamList = {
   Splash: undefined;
+  Language: undefined;
+  Permissions: undefined;
+  CinematicIntro: undefined;
   Chat: undefined;
 };
 
@@ -15,11 +20,24 @@ interface Props {
 
 const SplashScreen: React.FC<Props> = ({ navigation }) => {
   useEffect(() => {
-    const timer = setTimeout(() => {
-      navigation.replace('Chat');
-    }, 2000);
+    const checkNavigationFlow = async () => {
+      const settings = await loadSettings();
 
-    return () => clearTimeout(timer);
+      // Delay for splash effect
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      if (!settings.language) {
+        navigation.replace('Language');
+      } else if (!settings.permissionsGranted) {
+        navigation.replace('Permissions');
+      } else if (!settings.onboardingComplete) {
+        navigation.replace('CinematicIntro');
+      } else {
+        navigation.replace('Chat');
+      }
+    };
+
+    checkNavigationFlow();
   }, [navigation]);
 
   return (
@@ -32,7 +50,7 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
