@@ -4,7 +4,7 @@ import { GLView } from 'expo-gl';
 import { Renderer } from 'expo-three';
 import * as THREE from 'three';
 import { Asset } from 'expo-asset';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { GLTFLoader } from '../vendor/GLTFLoaderRN';
 
 const KrishnaAvatar: React.FC = () => {
   const rendererRef = useRef<Renderer | null>(null);
