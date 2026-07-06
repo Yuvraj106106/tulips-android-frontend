@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { GLView } from 'expo-gl';
-import { Renderer, loadAsync } from 'expo-three';
+import { Renderer, loadAsync, loadTextureAsync } from 'expo-three';
 import * as THREE from 'three';
 import { companions, CompanionId, DEFAULT_COMPANION } from '../companions/config';
 
@@ -43,11 +43,24 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
     scene.add(sphere);
   };
 
+  const applyColorSpace = (texture: THREE.Texture) => {
+    if ('colorSpace' in texture) {
+      (texture as any).colorSpace = (THREE as any).SRGBColorSpace ?? (texture as any).colorSpace;
+    } else if ('encoding' in texture) {
+      (texture as any).encoding = (THREE as any).sRGBEncoding ?? (texture as any).encoding;
+    }
+    texture.needsUpdate = true;
+  };
+
   // Some three.js versions default freshly-loaded textures to the wrong
   // color space, which can make correctly-loaded PBR textures look washed
   // out or flat even after they've actually arrived. This normalizes color
   // space and forces the GPU to re-upload once the image data is in.
-  const normalizeMaterials = (model: THREE.Object3D) => {
+  //
+  // If `overrideTexture` is provided, it's applied to every material's map
+  // directly — this is the manual-texture path used when the GLB's own
+  // embedded textures can't be decoded in React Native (see config.ts).
+  const normalizeMaterials = (model: THREE.Object3D, overrideTexture?: THREE.Texture) => {
     model.traverse((child: any) => {
       if (!child.isMesh) return;
       if (child.geometry) {
@@ -56,13 +69,11 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
       if (!child.material) return;
       const materials = Array.isArray(child.material) ? child.material : [child.material];
       materials.forEach((mat: any) => {
+        if (overrideTexture) {
+          mat.map = overrideTexture;
+        }
         if (mat.map) {
-          if ('colorSpace' in mat.map) {
-            mat.map.colorSpace = (THREE as any).SRGBColorSpace ?? mat.map.colorSpace;
-          } else if ('encoding' in mat.map) {
-            mat.map.encoding = (THREE as any).sRGBEncoding ?? mat.map.encoding;
-          }
-          mat.map.needsUpdate = true;
+          applyColorSpace(mat.map);
         }
         mat.needsUpdate = true;
       });
@@ -123,14 +134,33 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
       // GLTFLoader.parse) matters here: it pulls in expo-three's texture-loading
       // polyfill so GLTFLoader's internal image decoding goes through Expo's
       // asset pipeline instead of browser-only APIs (Image(), createImageBitmap)
-      // that don't exist in React Native. Without this, geometry loads fine but
-      // textures can silently fail and the model renders flat white.
+      // that don't exist in React Native. Geometry parsing is unaffected either
+      // way since it's raw binary, no image decoding involved.
       const gltf: any = await loadAsync(config.modelAsset);
       if (!mounted.current) return;
 
       const model: THREE.Object3D = gltf.scene ?? gltf;
 
-      normalizeMaterials(model);
+      // Krishna's GLB embeds its textures inside the binary file itself.
+      // GLTFLoader tries to extract those and build a Blob to decode them as
+      // an image, but React Native's Blob implementation can't create a Blob
+      // from raw ArrayBuffer/ArrayBufferView data — that always fails
+      // (logged as "Couldn't load texture"), leaving the mesh flat white.
+      //
+      // Workaround: if a standalone texture file is configured, load it
+      // through expo-three's TextureLoader (file URI -> GPU, no Blob step)
+      // and apply it to every material directly, overriding whatever (empty)
+      // map GLTFLoader ended up with.
+      let overrideTexture: THREE.Texture | undefined;
+      if (config.textureAsset) {
+        try {
+          overrideTexture = await loadTextureAsync({ asset: config.textureAsset });
+        } catch (texErr) {
+          console.error(`Manual texture load failed for ${config.id}:`, texErr);
+        }
+      }
+
+      normalizeMaterials(model, overrideTexture);
 
       // Auto-center and scale to fit the view regardless of the
       // model's original export scale/origin.
@@ -148,7 +178,9 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
       model.position.y += 0.4;
 
       scene.add(model);
-      console.log(`✅ ${config.name} model loaded (companion: ${config.id})`);
+      console.log(
+        `✅ ${config.name} model loaded (companion: ${config.id}, manualTexture: ${!!overrideTexture})`
+      );
       renderOnce();
     } catch (e) {
       console.error(`Model load error for ${config.id}, falling back to sphere:`, e);
