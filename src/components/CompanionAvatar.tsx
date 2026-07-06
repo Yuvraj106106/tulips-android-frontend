@@ -1,8 +1,10 @@
 import React, { useRef, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { GLView } from 'expo-gl';
-import { Renderer, loadAsync, loadTextureAsync } from 'expo-three';
+import { Renderer, loadTextureAsync } from 'expo-three';
 import * as THREE from 'three';
+import { Asset } from 'expo-asset';
+import { GLTFLoader } from '../vendor/GLTFLoaderRN';
 import { companions, CompanionId, DEFAULT_COMPANION } from '../companions/config';
 
 interface CompanionAvatarProps {
@@ -107,6 +109,13 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
           }
         } else if (sharedTexture) {
           mat.map = sharedTexture;
+        } else if (mat.map) {
+          // Embedded texture decoded directly by GLTFLoaderRN (no config
+          // override needed) — still needs the same NPOT safety pass as
+          // manually-loaded textures, or non-power-of-two embedded maps
+          // (e.g. krishna_hq's 1920x1920 diffuse) will silently fail to
+          // render under WebGL1 despite loading successfully.
+          finalizeTexture(mat.map);
         }
 
         if (!mat.map) {
@@ -167,13 +176,24 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
     };
 
     try {
-      // Using expo-three's own loadAsync (instead of a raw fetch + arrayBuffer +
-      // GLTFLoader.parse) matters here: it pulls in expo-three's texture-loading
-      // polyfill so GLTFLoader's internal image decoding goes through Expo's
-      // asset pipeline instead of browser-only APIs (Image(), createImageBitmap)
-      // that don't exist in React Native. Geometry parsing is unaffected either
-      // way since it's raw binary, no image decoding involved.
-      const gltf: any = await loadAsync(config.modelAsset);
+      // Loaded via the vendored GLTFLoaderRN (src/vendor/GLTFLoaderRN.js)
+      // instead of expo-three's loadAsync — that helper's internal loader
+      // still can't decode embedded GLB textures under React Native. The
+      // vendored loader routes embedded image bufferViews through
+      // expo-file-system + a custom RNTextureLoader (see PR #5) so
+      // embedded textures load without depending on browser-only Blob/URL
+      // APIs. Geometry parsing is unaffected either way since it's raw
+      // binary, no image decoding involved.
+      const asset = Asset.fromModule(config.modelAsset);
+      await asset.downloadAsync();
+      const uri = asset.localUri!;
+      const response = await fetch(uri);
+      const buffer = await response.arrayBuffer();
+
+      const gltf: any = await new Promise((resolve, reject) => {
+        const loader = new GLTFLoader();
+        loader.parse(buffer, '', resolve, reject);
+      });
       if (!mounted.current) return;
 
       const model: THREE.Object3D = gltf.scene ?? gltf;
