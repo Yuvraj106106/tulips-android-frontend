@@ -6,6 +6,15 @@ export interface Settings {
   language?: 'Hindi' | 'Hinglish' | 'English';
   permissionsGranted?: boolean;
   onboardingComplete?: boolean;
+  voiceEnabled?: boolean;
+  voiceSpeed?: 'slow' | 'normal' | 'fast';
+  notificationsEnabled?: boolean;
+  selectedCompanion?: string;
+  user?: {
+    name: string;
+    email: string;
+    phoneNumber: string;
+  };
 }
 
 export async function saveSettings(settings: Partial<Settings>) {
@@ -23,10 +32,22 @@ export async function loadSettings(): Promise<Settings> {
     const info = await FileSystem.getInfoAsync(SETTINGS_FILE);
     if (info.exists) {
       const content = await FileSystem.readAsStringAsync(SETTINGS_FILE);
-      return JSON.parse(content);
+      const settings = JSON.parse(content);
+      return {
+        voiceEnabled: true,
+        voiceSpeed: 'normal',
+        notificationsEnabled: true,
+        selectedCompanion: 'krishna',
+        ...settings,
+      };
     }
   } catch (error) {
     console.error('Error loading settings:', error);
   }
-  return {};
+  return {
+    voiceEnabled: true,
+    voiceSpeed: 'normal',
+    notificationsEnabled: true,
+    selectedCompanion: 'krishna',
+  };
 }

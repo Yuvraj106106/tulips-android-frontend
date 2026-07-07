@@ -3,6 +3,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import SplashScreen from './src/screens/SplashScreen';
+import SignUpScreen from './src/screens/SignUpScreen';
 import LanguageScreen from './src/screens/LanguageScreen';
 import PermissionsScreen from './src/screens/PermissionsScreen';
 import CinematicIntroScreen from './src/screens/CinematicIntroScreen';
@@ -11,6 +12,7 @@ import { StatusBar } from 'expo-status-bar';
 
 export type RootStackParamList = {
   Splash: undefined;
+  SignUp: undefined;
   Language: undefined;
   Permissions: undefined;
   CinematicIntro: undefined;
@@ -30,6 +32,7 @@ export default function App() {
         }}
       >
         <Stack.Screen name="Splash" component={SplashScreen} />
+        <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="Language" component={LanguageScreen} />
         <Stack.Screen name="Permissions" component={PermissionsScreen} />
         <Stack.Screen name="CinematicIntro" component={CinematicIntroScreen} />

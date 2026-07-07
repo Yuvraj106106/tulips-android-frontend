@@ -1,4 +1,5 @@
 import { BACKEND_URL } from '../constants/config';
+import { loadSettings } from './settings';
 
 export async function sendMessage(message: string, conversationId: string) {
   console.log("🚀 sendMessage CALLED with:", message);
@@ -6,12 +7,20 @@ export async function sendMessage(message: string, conversationId: string) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 60000);
 
+    const settings = await loadSettings();
     const response = await fetch(`${BACKEND_URL}/api/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ message, conversationId }),
+      body: JSON.stringify({
+        message,
+        conversationId,
+        language: settings.language,
+        voiceSpeed: settings.voiceSpeed,
+        voiceEnabled: settings.voiceEnabled,
+        companionId: settings.selectedCompanion,
+      }),
       signal: controller.signal,
     });
 
