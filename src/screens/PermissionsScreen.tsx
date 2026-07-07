@@ -6,6 +6,8 @@ import { saveSettings } from '../services/settings';
 import FloatingBubble from '../services/FloatingBubble';
 
 type RootStackParamList = {
+  Splash: undefined;
+  SignUp: undefined;
   Language: undefined;
   Permissions: undefined;
   CinematicIntro: undefined;

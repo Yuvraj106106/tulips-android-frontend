@@ -6,6 +6,7 @@ import { COLORS } from '../constants/theme';
 
 type RootStackParamList = {
   Splash: undefined;
+  SignUp: undefined;
   Language: undefined;
   Permissions: undefined;
   CinematicIntro: undefined;
@@ -26,7 +27,9 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
       // Delay for splash effect
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      if (!settings.language) {
+      if (!settings.signUpComplete) {
+        navigation.replace('SignUp');
+      } else if (!settings.language) {
         navigation.replace('Language');
       } else if (!settings.permissionsGranted) {
         navigation.replace('Permissions');

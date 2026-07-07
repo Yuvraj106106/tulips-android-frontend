@@ -6,6 +6,9 @@ export interface Settings {
   language?: 'Hindi' | 'Hinglish' | 'English';
   permissionsGranted?: boolean;
   onboardingComplete?: boolean;
+  signUpComplete?: boolean;
+  userId?: string;
+  phone?: string;
 }
 
 export async function saveSettings(settings: Partial<Settings>) {

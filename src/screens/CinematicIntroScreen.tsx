@@ -5,6 +5,8 @@ import { COLORS, SPACING, TYPOGRAPHY } from '../constants/theme';
 import { saveSettings } from '../services/settings';
 
 type RootStackParamList = {
+  Splash: undefined;
+  SignUp: undefined;
   Language: undefined;
   Permissions: undefined;
   CinematicIntro: undefined;

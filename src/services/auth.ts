@@ -1,0 +1,53 @@
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
+import { GOOGLE_CLIENT_ID } from '../constants/config';
+
+WebBrowser.maybeCompleteAuthSession();
+
+export interface AuthResponse {
+  success: boolean;
+  userId?: string;
+  error?: string;
+}
+
+export async function sendOtp(phone: string): Promise<{ success: boolean; error?: string }> {
+  console.log(`Sending OTP to ${phone}...`);
+  // TODO: replace with real backend call
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({ success: true });
+    }, 1500);
+  });
+}
+
+export async function verifyOtp(phone: string, code: string): Promise<AuthResponse> {
+  console.log(`Verifying OTP ${code} for ${phone}...`);
+  // TODO: replace with real backend call
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      if (code === '123456') { // Mock verification
+        resolve({ success: true, userId: 'mock-user-123' });
+      } else {
+        resolve({ success: false, error: 'Invalid OTP' });
+      }
+    }, 1500);
+  });
+}
+
+/**
+ * Hook to use Google Authentication
+ * Note: This requires proper setup in Google Cloud Console
+ * and configuring the GOOGLE_CLIENT_ID in src/constants/config.ts
+ */
+export function useGoogleAuth() {
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    androidClientId: GOOGLE_CLIENT_ID,
+    // Add other client IDs if needed (iosClientId, webClientId, etc.)
+  });
+
+  return {
+    request,
+    response,
+    promptAsync,
+  };
+}
