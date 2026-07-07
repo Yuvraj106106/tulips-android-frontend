@@ -11,6 +11,8 @@ export interface CompanionConfig {
   // require()'d GLB asset. Only companions with an actual model file
   // bundled in /assets should be listed in `companions` below.
   modelAsset: number;
+  // require()'d video asset for the intro.
+  introVideoAsset: number;
   themeColor: string;
   backgroundColor: string;
   // Single-texture override (whole model shares one UV atlas / one image).
@@ -24,24 +26,43 @@ export interface CompanionConfig {
   materialTextureMap?: Record<string, number>;
 }
 
-export const companions: Partial<Record<CompanionId, CompanionConfig>> = {
+export const companions: Record<CompanionId, CompanionConfig> = {
   krishna: {
     id: 'krishna',
     name: 'Krishna',
-    // Real high-quality model. Now that GLTFLoaderRN correctly decodes
-    // embedded GLB textures under React Native (see PR #5 + the
-    // expo-file-system/legacy fix), this model's own embedded 1920x1920
-    // diffuse texture loads automatically — no manual materialTextureMap
-    // needed anymore, unlike the placeholder model this replaces.
+    // Real high-quality model.
     modelAsset: require('../../assets/krishna_hq.glb'),
+    introVideoAsset: require('../../assets/placeholder_video.mp4'), // TODO: swap for real video when ready
     themeColor: '#FFBF00',
     backgroundColor: '#0a0a1a',
-    // Fallback only: if embedded-texture decode ever fails for this
-    // asset for some reason, uncomment this to force the same texture
-    // in manually instead.
-    // textureAsset: require('../../assets/krishna_texture_diffuse.webp'),
   },
-  // rama, buddha, osho: add here in Phase 6 once their GLB assets exist.
+  rama: {
+    id: 'rama',
+    name: 'Rama',
+    // TODO: swap for real GLB when ready, no code change needed elsewhere
+    modelAsset: require('../../assets/krishna_placeholder.glb'),
+    introVideoAsset: require('../../assets/placeholder_video.mp4'), // TODO: swap for real video when ready
+    themeColor: '#00BFFF',
+    backgroundColor: '#0a0a1a',
+  },
+  buddha: {
+    id: 'buddha',
+    name: 'Buddha',
+    // TODO: swap for real GLB when ready, no code change needed elsewhere
+    modelAsset: require('../../assets/krishna_placeholder.glb'),
+    introVideoAsset: require('../../assets/placeholder_video.mp4'), // TODO: swap for real video when ready
+    themeColor: '#FF7F50',
+    backgroundColor: '#0a0a1a',
+  },
+  osho: {
+    id: 'osho',
+    name: 'Osho',
+    // TODO: swap for real GLB when ready, no code change needed elsewhere
+    modelAsset: require('../../assets/krishna_placeholder.glb'),
+    introVideoAsset: require('../../assets/placeholder_video.mp4'), // TODO: swap for real video when ready
+    themeColor: '#9370DB',
+    backgroundColor: '#0a0a1a',
+  },
 };
 
 export const DEFAULT_COMPANION: CompanionId = 'krishna';

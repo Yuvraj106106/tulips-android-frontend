@@ -5,6 +5,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import SplashScreen from './src/screens/SplashScreen';
 import LanguageScreen from './src/screens/LanguageScreen';
 import PermissionsScreen from './src/screens/PermissionsScreen';
+import AvatarSelectScreen from './src/screens/AvatarSelectScreen';
 import CinematicIntroScreen from './src/screens/CinematicIntroScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import { StatusBar } from 'expo-status-bar';
@@ -13,6 +14,7 @@ export type RootStackParamList = {
   Splash: undefined;
   Language: undefined;
   Permissions: undefined;
+  AvatarSelect: undefined;
   CinematicIntro: undefined;
   Chat: undefined;
 };
@@ -32,6 +34,7 @@ export default function App() {
         <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="Language" component={LanguageScreen} />
         <Stack.Screen name="Permissions" component={PermissionsScreen} />
+        <Stack.Screen name="AvatarSelect" component={AvatarSelectScreen} />
         <Stack.Screen name="CinematicIntro" component={CinematicIntroScreen} />
         <Stack.Screen
           name="Chat"

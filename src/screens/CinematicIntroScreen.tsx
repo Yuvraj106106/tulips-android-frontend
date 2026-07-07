@@ -1,12 +1,13 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity, SafeAreaView } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text, SafeAreaView, ActivityIndicator } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import { BlurView } from 'expo-blur';
 import { COLORS, SPACING, TYPOGRAPHY } from '../constants/theme';
-import { saveSettings } from '../services/settings';
+import { saveSettings, loadSettings } from '../services/settings';
+import { companions, CompanionId, DEFAULT_COMPANION } from '../companions/config';
 
 type RootStackParamList = {
-  Language: undefined;
-  Permissions: undefined;
   CinematicIntro: undefined;
   Chat: undefined;
 };
@@ -18,17 +19,19 @@ interface Props {
 }
 
 const CinematicIntroScreen: React.FC<Props> = ({ navigation }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [selectedCompanionId, setSelectedCompanionId] = useState<CompanionId>(DEFAULT_COMPANION);
+  const [loading, setLoading] = useState(true);
+  const videoRef = useRef<Video>(null);
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 2000,
-      useNativeDriver: true,
-    }).start();
-
-    const timeout = setTimeout(completeOnboarding, 5000);
-    return () => clearTimeout(timeout);
+    const init = async () => {
+      const settings = await loadSettings();
+      if (settings.selectedCompanion) {
+        setSelectedCompanionId(settings.selectedCompanion);
+      }
+      setLoading(false);
+    };
+    init();
   }, []);
 
   const completeOnboarding = async () => {
@@ -36,63 +39,85 @@ const CinematicIntroScreen: React.FC<Props> = ({ navigation }) => {
     navigation.replace('Chat');
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-        <Text style={styles.krishnaLogo}>🪈</Text>
-        <Text style={styles.greeting}>Aa gaye?</Text>
-        <Text style={styles.subGreeting}>Main yahan hoon. Baat karo.</Text>
+  const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
+    if (status.isLoaded && status.didJustFinish) {
+      completeOnboarding();
+    }
+  };
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={completeOnboarding}
-        >
-          <Text style={styles.buttonText}>Pranaam 🙏</Text>
-        </TouchableOpacity>
-      </Animated.View>
-    </SafeAreaView>
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
+
+  const companion = companions[selectedCompanionId];
+
+  return (
+    <View style={styles.container}>
+      <Video
+        ref={videoRef}
+        source={companion.introVideoAsset}
+        style={StyleSheet.absoluteFill}
+        resizeMode={ResizeMode.COVER}
+        shouldPlay
+        onPlaybackStatusUpdate={onPlaybackStatusUpdate}
+        onError={(error) => {
+          console.error('[CinematicIntro] Video error:', error);
+          // Fallback if video fails
+          setTimeout(completeOnboarding, 2000);
+        }}
+      />
+
+      <SafeAreaView style={styles.overlay}>
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.skipButton} onPress={completeOnboarding}>
+            <BlurView intensity={40} tint="dark" style={styles.skipBlur}>
+              <Text style={styles.skipText}>Skip</Text>
+            </BlurView>
+          </TouchableOpacity>
+        </View>
+
+        {/* Subtle glass UI at the bottom could go here if needed */}
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#000',
   },
-  content: {
-    flex: 1,
+  center: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
   },
-  krishnaLogo: {
-    fontSize: 80,
-    marginBottom: SPACING.xl,
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'space-between',
   },
-  greeting: {
-    ...TYPOGRAPHY.h1,
-    color: COLORS.primary,
-    fontSize: 40,
-    textAlign: 'center',
-    marginBottom: SPACING.sm,
+  topBar: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    padding: SPACING.lg,
   },
-  subGreeting: {
-    ...TYPOGRAPHY.h2,
-    textAlign: 'center',
-    marginBottom: SPACING.xxl,
-    opacity: 0.8,
+  skipButton: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
-  button: {
-    marginTop: SPACING.xl,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.xl,
-    borderRadius: 30,
-    borderWidth: 2,
-    borderColor: COLORS.primary,
+  skipBlur: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
   },
-  buttonText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.primary,
+  skipText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.text,
     fontWeight: 'bold',
   },
 });

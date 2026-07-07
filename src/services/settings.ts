@@ -1,4 +1,5 @@
 import * as FileSystem from 'expo-file-system/legacy';
+import { CompanionId } from '../companions/config';
 
 const SETTINGS_FILE = `${FileSystem.documentDirectory}settings.json`;
 
@@ -6,6 +7,7 @@ export interface Settings {
   language?: 'Hindi' | 'Hinglish' | 'English';
   permissionsGranted?: boolean;
   onboardingComplete?: boolean;
+  selectedCompanion?: CompanionId;
 }
 
 export async function saveSettings(settings: Partial<Settings>) {

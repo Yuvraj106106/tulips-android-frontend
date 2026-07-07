@@ -52,7 +52,7 @@ const PermissionsScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     await saveSettings({ permissionsGranted: true });
-    navigation.replace('CinematicIntro');
+    navigation.replace('AvatarSelect' as any);
   };
 
   return (
