@@ -9,6 +9,15 @@ export interface Settings {
   signUpComplete?: boolean;
   userId?: string;
   phone?: string;
+  voiceEnabled?: boolean;
+  voiceSpeed?: 'slow' | 'normal' | 'fast';
+  notificationsEnabled?: boolean;
+  selectedCompanion?: string; // NOTE: gets upgraded to CompanionId type in step 3 below
+  user?: {
+    name: string;
+    email: string;
+    phoneNumber: string;
+  };
 }
 
 export async function saveSettings(settings: Partial<Settings>) {
@@ -26,10 +35,22 @@ export async function loadSettings(): Promise<Settings> {
     const info = await FileSystem.getInfoAsync(SETTINGS_FILE);
     if (info.exists) {
       const content = await FileSystem.readAsStringAsync(SETTINGS_FILE);
-      return JSON.parse(content);
+      const settings = JSON.parse(content);
+      return {
+        voiceEnabled: true,
+        voiceSpeed: 'normal',
+        notificationsEnabled: true,
+        selectedCompanion: 'krishna',
+        ...settings,
+      };
     }
   } catch (error) {
     console.error('Error loading settings:', error);
   }
-  return {};
+  return {
+    voiceEnabled: true,
+    voiceSpeed: 'normal',
+    notificationsEnabled: true,
+    selectedCompanion: 'krishna',
+  };
 }

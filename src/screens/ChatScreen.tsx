@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Text, PermissionsAndroid, Platform, Alert } from 'react-native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import MessageBubble from '../components/MessageBubble';
 import InputBar from '../components/InputBar';
 import FloatingBubble from '../services/FloatingBubble';
@@ -8,6 +9,7 @@ import { playBase64Audio, stopAudio } from '../services/audioPlayer';
 import { ExpoSpeechRecognitionModule, ExpoSpeechRecognitionModuleEmitter } from 'expo-speech-recognition';
 import { Audio } from 'expo-av';
 import KrishnaAvatar from '../components/KrishnaAvatar';
+import SettingsPanel from '../components/SettingsPanel';
 
 interface Message {
   id: string;
@@ -18,7 +20,11 @@ interface Message {
 
 const CONVERSATION_ID = 'default_conversation';
 
-const ChatScreen: React.FC = () => {
+interface Props {
+  navigation: StackNavigationProp<any, 'Chat'>;
+}
+
+const ChatScreen: React.FC<Props> = ({ navigation }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -30,6 +36,7 @@ const ChatScreen: React.FC = () => {
   const [mode, setMode] = useState<'text' | 'voice'>('text');
   const [isListening, setIsListening] = useState(false);
   const [isBubbleEnabled, setIsBubbleEnabled] = useState(false);
+  const [isSettingsVisible, setIsSettingsVisible] = useState(false);
   const [sttError, setSttError] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const modeRef = useRef(mode);
@@ -41,6 +48,19 @@ const ChatScreen: React.FC = () => {
   useEffect(() => {
     modeRef.current = mode;
   }, [mode]);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => setIsSettingsVisible(true)}
+          style={{ marginRight: 15 }}
+        >
+          <Text style={{ fontSize: 24 }}>⚙️</Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
 
   useEffect(() => {
     const checkService = async () => {
@@ -280,8 +300,18 @@ const ChatScreen: React.FC = () => {
     }
   };
 
+  const handleSignOut = () => {
+    setIsSettingsVisible(false);
+    navigation.replace('SignUp');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
+      <SettingsPanel
+        isVisible={isSettingsVisible}
+        onClose={() => setIsSettingsVisible(false)}
+        onSignOut={handleSignOut}
+      />
       <View style={styles.topBar}>
         <View style={styles.modeToggleContainer}>
           <TouchableOpacity
