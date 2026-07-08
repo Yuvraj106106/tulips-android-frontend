@@ -1,6 +1,6 @@
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
-import { GOOGLE_CLIENT_ID } from '../constants/config';
+import { GOOGLE_CLIENT_ID, BACKEND_URL } from '../constants/config';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -11,27 +11,45 @@ export interface AuthResponse {
 }
 
 export async function sendOtp(phone: string): Promise<{ success: boolean; error?: string }> {
-  console.log(`Sending OTP to ${phone}...`);
-  // TODO: replace with real backend call
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ success: true });
-    }, 1500);
-  });
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/auth/send-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { success: false, error: data.error || 'Failed to send OTP' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending OTP:', error);
+    return { success: false, error: 'Network error while sending OTP' };
+  }
 }
 
 export async function verifyOtp(phone: string, code: string): Promise<AuthResponse> {
-  console.log(`Verifying OTP ${code} for ${phone}...`);
-  // TODO: replace with real backend call
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      if (code === '123456') { // Mock verification
-        resolve({ success: true, userId: 'mock-user-123' });
-      } else {
-        resolve({ success: false, error: 'Invalid OTP' });
-      }
-    }, 1500);
-  });
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/auth/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, code }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      return { success: false, error: data.error || 'Invalid OTP' };
+    }
+
+    return { success: true, userId: data.userId };
+  } catch (error) {
+    console.error('Error verifying OTP:', error);
+    return { success: false, error: 'Network error while verifying OTP' };
+  }
 }
 
 /**
