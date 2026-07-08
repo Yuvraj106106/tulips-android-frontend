@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { loadSettings } from '../services/settings';
+import { loadSettings, resetSettings } from '../services/settings';
 import { COLORS } from '../constants/theme';
 import { preloadCompanionVideos } from '../services/videoPreloader';
 
@@ -29,6 +29,10 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
     preloadCompanionVideos();
 
     const checkNavigationFlow = async () => {
+      // ⚠️ TEMP FOR TESTING — remove this line once onboarding flow testing is done.
+      // Forces every app launch/reload to behave like a fresh install.
+      await resetSettings();
+
       const settings = await loadSettings();
 
       // Delay for splash effect

@@ -76,9 +76,15 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
       // result = await promptAsync();
       // For this stub, we'll simulate success
       console.log('Google Sign-In initiated');
-      setTimeout(() => {
+      setTimeout(async () => {
         setLoading(false);
-        transitionTo(AuthStep.PHONE_STEP);
+        // TEMP: phone/OTP step is being skipped for now — will be re-added later.
+        // Using a placeholder userId since there's no real auth identity yet.
+        await saveSettings({
+          signUpComplete: true,
+          userId: 'temp-google-user',
+        });
+        navigation.replace('DateOfBirth');
       }, 1000);
     } catch (err) {
       setError('Google Sign-In failed');

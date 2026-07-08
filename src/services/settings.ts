@@ -32,6 +32,14 @@ export async function saveSettings(settings: Partial<Settings>) {
   }
 }
 
+export async function resetSettings() {
+  try {
+    await FileSystem.deleteAsync(SETTINGS_FILE, { idempotent: true });
+  } catch (error) {
+    console.error('Error resetting settings:', error);
+  }
+}
+
 export async function loadSettings(): Promise<Settings> {
   try {
     const info = await FileSystem.getInfoAsync(SETTINGS_FILE);
