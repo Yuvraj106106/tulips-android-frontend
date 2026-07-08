@@ -24,7 +24,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ text, sender, timestamp, 
         { shouldPlay: true }
       );
       sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.didJustFinish) {
+        if (status.isLoaded && status.didJustFinish) {
           setPlaying(false);
           sound.unloadAsync();
         }

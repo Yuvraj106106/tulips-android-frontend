@@ -6,7 +6,7 @@ import InputBar from '../components/InputBar';
 import FloatingBubble from '../services/FloatingBubble';
 import { sendMessage } from '../services/api';
 import { playBase64Audio, stopAudio } from '../services/audioPlayer';
-import { ExpoSpeechRecognitionModule, ExpoSpeechRecognitionModuleEmitter } from 'expo-speech-recognition';
+import { ExpoSpeechRecognitionModule, addSpeechRecognitionListener } from 'expo-speech-recognition';
 import { Audio } from 'expo-av';
 import KrishnaAvatar from '../components/KrishnaAvatar';
 import SettingsPanel from '../components/SettingsPanel';
@@ -134,7 +134,7 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   useEffect(() => {
-    const resultSub = ExpoSpeechRecognitionModuleEmitter.addListener('result', (event: any) => {
+    const resultSub = addSpeechRecognitionListener('result', (event) => {
       // Only act on final result
       if (event.isFinal && event.results?.length > 0) {
         pendingTranscript.current = event.results[0].transcript || '';
@@ -142,7 +142,7 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
       }
     });
 
-    const endSub = ExpoSpeechRecognitionModuleEmitter.addListener('end', () => {
+    const endSub = addSpeechRecognitionListener('end', () => {
       // If there's pending text, send immediately
       if (pendingTranscript.current.trim()) {
         processFinalTranscript();
@@ -150,7 +150,7 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
       setIsListening(false);
     });
 
-    const errorSub = ExpoSpeechRecognitionModuleEmitter.addListener('error', (event: any) => {
+    const errorSub = addSpeechRecognitionListener('error', (event) => {
       console.error('STT error:', event);
       setSttError(event.message || 'Speech recognition error');
       setIsListening(false);
