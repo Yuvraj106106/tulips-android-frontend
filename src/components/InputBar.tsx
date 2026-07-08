@@ -3,6 +3,8 @@ import {
   View, TextInput, TouchableOpacity, Text,
   StyleSheet, KeyboardAvoidingView, Platform
 } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { COLORS, SPACING } from '../constants/theme';
 
 interface InputBarProps {
   onSendMessage: (message: string) => void;
@@ -33,7 +35,7 @@ const InputBar: React.FC<InputBarProps> = ({
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={100}
     >
-      <View style={styles.container}>
+      <BlurView intensity={60} tint="dark" style={styles.container}>
         {!isVoiceMode ? (
           <>
             <TextInput
@@ -41,7 +43,7 @@ const InputBar: React.FC<InputBarProps> = ({
               value={message}
               onChangeText={setMessage}
               placeholder="Type a message..."
-              placeholderTextColor="#999"
+              placeholderTextColor={COLORS.textSecondary}
               multiline
             />
             <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
@@ -61,7 +63,7 @@ const InputBar: React.FC<InputBarProps> = ({
             </Text>
           </TouchableOpacity>
         )}
-      </View>
+      </BlurView>
     </KeyboardAvoidingView>
   );
 };
@@ -69,32 +71,37 @@ const InputBar: React.FC<InputBarProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    padding: 10,
-    backgroundColor: '#fff',
+    padding: SPACING.sm + 2,
+    backgroundColor: 'rgba(26, 26, 46, 0.6)',
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: COLORS.border,
     alignItems: 'center',
   },
   input: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1,
+    borderColor: COLORS.border,
     borderRadius: 20,
     paddingHorizontal: 15,
     paddingVertical: 8,
     marginRight: 10,
     fontSize: 16,
     maxHeight: 100,
+    color: COLORS.text,
   },
   sendButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
   },
-  sendButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  sendButtonText: { color: COLORS.secondary, fontWeight: 'bold', fontSize: 16 },
   micButton: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'rgba(255, 191, 0, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 191, 0, 0.3)',
     borderRadius: 30,
     paddingVertical: 16,
     alignItems: 'center',
@@ -103,12 +110,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   micButtonActive: {
-    backgroundColor: '#FFE5E5',
+    backgroundColor: 'rgba(255, 59, 48, 0.15)',
     borderWidth: 2,
-    borderColor: '#FF3B30',
+    borderColor: COLORS.error,
   },
   micIcon: { fontSize: 24 },
-  micLabel: { fontSize: 16, color: '#333', fontWeight: '500' },
+  micLabel: { fontSize: 16, color: COLORS.text, fontWeight: '500' },
 });
 
 export default InputBar;

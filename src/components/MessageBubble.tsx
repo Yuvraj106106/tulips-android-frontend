@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Audio } from 'expo-av';
+import { BlurView } from 'expo-blur';
+import { COLORS, SPACING } from '../constants/theme';
 
 interface MessageBubbleProps {
   text: string;
@@ -35,15 +37,22 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ text, sender, timestamp, 
 
   return (
     <View style={[styles.container, isUser ? styles.userContainer : styles.krishnaContainer]}>
-      <View style={[styles.bubble, isUser ? styles.userBubble : styles.krishnaBubble]}>
-        <Text style={styles.text}>{text}</Text>
-        {!isUser && audioUrl && (
-          <TouchableOpacity onPress={playAudio} style={styles.audioButton}>
-            <Text style={styles.audioButtonText}>{playing ? 'Playing...' : '🔊 Play'}</Text>
-          </TouchableOpacity>
-        )}
-        <Text style={styles.timestamp}>{timestamp}</Text>
-      </View>
+      {isUser ? (
+        <View style={[styles.bubble, styles.userBubble]}>
+          <Text style={styles.userText}>{text}</Text>
+          <Text style={styles.userTimestamp}>{timestamp}</Text>
+        </View>
+      ) : (
+        <BlurView intensity={40} tint="dark" style={[styles.bubble, styles.krishnaBubble]}>
+          <Text style={styles.krishnaText}>{text}</Text>
+          {audioUrl && (
+            <TouchableOpacity onPress={playAudio} style={styles.audioButton}>
+              <Text style={styles.audioButtonText}>{playing ? 'Playing...' : '🔊 Play'}</Text>
+            </TouchableOpacity>
+          )}
+          <Text style={styles.krishnaTimestamp}>{timestamp}</Text>
+        </BlurView>
+      )}
     </View>
   );
 };
@@ -52,13 +61,25 @@ const styles = StyleSheet.create({
   container: { marginVertical: 5, flexDirection: 'row', width: '100%' },
   userContainer: { justifyContent: 'flex-end' },
   krishnaContainer: { justifyContent: 'flex-start' },
-  bubble: { maxWidth: '80%', padding: 10, borderRadius: 15 },
-  userBubble: { backgroundColor: '#007AFF', borderBottomRightRadius: 2 },
-  krishnaBubble: { backgroundColor: '#FFBF00', borderBottomLeftRadius: 2 },
-  text: { color: '#FFFFFF', fontSize: 16 },
-  timestamp: { color: 'rgba(0,0,0,0.4)', fontSize: 10, alignSelf: 'flex-end', marginTop: 4 },
-  audioButton: { marginTop: 8, padding: 8, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 8, alignSelf: 'flex-start' },
-  audioButtonText: { color: '#fff', fontSize: 14 },
+  bubble: { maxWidth: '80%', padding: SPACING.sm + 2, borderRadius: 18, overflow: 'hidden' },
+  userBubble: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderBottomRightRadius: 4,
+  },
+  krishnaBubble: {
+    backgroundColor: 'rgba(255, 191, 0, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 191, 0, 0.35)',
+    borderBottomLeftRadius: 4,
+  },
+  userText: { color: COLORS.text, fontSize: 16 },
+  krishnaText: { color: COLORS.text, fontSize: 16 },
+  userTimestamp: { color: COLORS.textSecondary, fontSize: 10, alignSelf: 'flex-end', marginTop: 4 },
+  krishnaTimestamp: { color: 'rgba(255,255,255,0.5)', fontSize: 10, alignSelf: 'flex-end', marginTop: 4 },
+  audioButton: { marginTop: 8, padding: 8, backgroundColor: 'rgba(255, 191, 0, 0.15)', borderRadius: 8, alignSelf: 'flex-start' },
+  audioButtonText: { color: COLORS.primary, fontSize: 14 },
 });
 
 export default MessageBubble;
