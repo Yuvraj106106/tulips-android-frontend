@@ -3,12 +3,14 @@ import { View, Text, StyleSheet } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { loadSettings } from '../services/settings';
 import { COLORS } from '../constants/theme';
+import { preloadCompanionVideos } from '../services/videoPreloader';
 
 type RootStackParamList = {
   Splash: undefined;
   SignUp: undefined;
   Language: undefined;
   Permissions: undefined;
+  AvatarSelect: undefined;
   CinematicIntro: undefined;
   Chat: undefined;
 };
@@ -21,6 +23,9 @@ interface Props {
 
 const SplashScreen: React.FC<Props> = ({ navigation }) => {
   useEffect(() => {
+    // Kick off video preloading as early as possible
+    preloadCompanionVideos();
+
     const checkNavigationFlow = async () => {
       const settings = await loadSettings();
 
@@ -33,6 +38,8 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
         navigation.replace('Language');
       } else if (!settings.permissionsGranted) {
         navigation.replace('Permissions');
+      } else if (!settings.selectedCompanion) {
+        navigation.replace('AvatarSelect');
       } else if (!settings.onboardingComplete) {
         navigation.replace('CinematicIntro');
       } else {

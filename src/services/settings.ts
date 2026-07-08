@@ -1,4 +1,5 @@
 import * as FileSystem from 'expo-file-system/legacy';
+import { CompanionId } from '../companions/config';
 
 const SETTINGS_FILE = `${FileSystem.documentDirectory}settings.json`;
 
@@ -12,7 +13,7 @@ export interface Settings {
   voiceEnabled?: boolean;
   voiceSpeed?: 'slow' | 'normal' | 'fast';
   notificationsEnabled?: boolean;
-  selectedCompanion?: string; // NOTE: gets upgraded to CompanionId type in step 3 below
+  selectedCompanion?: CompanionId;
   user?: {
     name: string;
     email: string;
