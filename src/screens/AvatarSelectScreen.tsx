@@ -23,6 +23,7 @@ const ITEM_SPACING = (width - ITEM_WIDTH) / 2;
 
 type RootStackParamList = {
   AvatarSelect: undefined;
+  PortalTransition: undefined;
   CinematicIntro: undefined;
 };
 
@@ -61,7 +62,7 @@ const AvatarSelectScreen: React.FC<Props> = ({ navigation }) => {
     });
 
     // (b) immediately navigate to AvatarIntro (CinematicIntro) screen
-    navigation.replace('CinematicIntro' as any);
+    navigation.replace('PortalTransition' as any);
   };
 
   const renderItem = ({ item, index }: { item: CompanionConfig; index: number }) => {

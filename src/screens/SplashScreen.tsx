@@ -8,9 +8,11 @@ import { preloadCompanionVideos } from '../services/videoPreloader';
 type RootStackParamList = {
   Splash: undefined;
   SignUp: undefined;
+  DateOfBirth: undefined;
   Language: undefined;
   Permissions: undefined;
   AvatarSelect: undefined;
+  PortalTransition: undefined;
   CinematicIntro: undefined;
   Chat: undefined;
 };
@@ -34,6 +36,8 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
 
       if (!settings.signUpComplete) {
         navigation.replace('SignUp');
+      } else if (!settings.dateOfBirth) {
+        navigation.replace('DateOfBirth');
       } else if (!settings.language) {
         navigation.replace('Language');
       } else if (!settings.permissionsGranted) {

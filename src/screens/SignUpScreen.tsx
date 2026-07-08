@@ -22,6 +22,7 @@ const { width } = Dimensions.get('window');
 type RootStackParamList = {
   Splash: undefined;
   SignUp: undefined;
+  DateOfBirth: undefined;
   Language: undefined;
   Permissions: undefined;
   CinematicIntro: undefined;
@@ -114,7 +115,7 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
         userId: result.userId,
         phone: phone,
       });
-      navigation.replace('Language');
+      navigation.replace('DateOfBirth');
     } else {
       setError(result.error || 'Invalid OTP');
     }

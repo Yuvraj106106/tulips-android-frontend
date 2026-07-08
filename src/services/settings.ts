@@ -10,6 +10,7 @@ export interface Settings {
   signUpComplete?: boolean;
   userId?: string;
   phone?: string;
+  dateOfBirth?: string; // ISO format YYYY-MM-DD
   voiceEnabled?: boolean;
   voiceSpeed?: 'slow' | 'normal' | 'fast';
   notificationsEnabled?: boolean;
