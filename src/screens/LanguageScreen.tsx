@@ -6,6 +6,7 @@ import { saveSettings } from '../services/settings';
 
 type RootStackParamList = {
   Language: undefined;
+  DateOfBirth: undefined;
   Permissions: undefined;
   CinematicIntro: undefined;
   Chat: undefined;
@@ -20,7 +21,7 @@ interface Props {
 const LanguageScreen: React.FC<Props> = ({ navigation }) => {
   const selectLanguage = async (language: 'Hindi' | 'Hinglish' | 'English') => {
     await saveSettings({ language });
-    navigation.replace('Permissions');
+    navigation.replace('DateOfBirth');
   };
 
   return (

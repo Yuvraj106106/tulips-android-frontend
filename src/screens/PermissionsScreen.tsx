@@ -8,6 +8,7 @@ import FloatingBubble from '../services/FloatingBubble';
 type RootStackParamList = {
   Language: undefined;
   Permissions: undefined;
+  AvatarSelect: undefined;
   CinematicIntro: undefined;
   Chat: undefined;
 };
@@ -52,7 +53,7 @@ const PermissionsScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     await saveSettings({ permissionsGranted: true });
-    navigation.replace('CinematicIntro');
+    navigation.replace('AvatarSelect');
   };
 
   return (

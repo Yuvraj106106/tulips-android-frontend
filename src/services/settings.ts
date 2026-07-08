@@ -6,6 +6,7 @@ export interface Settings {
   language?: 'Hindi' | 'Hinglish' | 'English';
   permissionsGranted?: boolean;
   onboardingComplete?: boolean;
+  dateOfBirth?: string; // ISO format (YYYY-MM-DD)
 }
 
 export async function saveSettings(settings: Partial<Settings>) {

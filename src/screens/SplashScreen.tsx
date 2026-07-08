@@ -6,8 +6,12 @@ import { COLORS } from '../constants/theme';
 
 type RootStackParamList = {
   Splash: undefined;
+  PortalTransition: undefined;
+  SignUp: undefined;
   Language: undefined;
+  DateOfBirth: undefined;
   Permissions: undefined;
+  AvatarSelect: undefined;
   CinematicIntro: undefined;
   Chat: undefined;
 };
@@ -27,7 +31,7 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       if (!settings.language) {
-        navigation.replace('Language');
+        navigation.replace('PortalTransition');
       } else if (!settings.permissionsGranted) {
         navigation.replace('Permissions');
       } else if (!settings.onboardingComplete) {
