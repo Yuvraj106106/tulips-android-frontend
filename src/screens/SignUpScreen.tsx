@@ -15,7 +15,7 @@ import { BlurView } from 'expo-blur';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { COLORS, SPACING, TYPOGRAPHY } from '../constants/theme';
 import { saveSettings } from '../services/settings';
-import { sendOtp, verifyOtp, useGoogleAuth } from '../services/auth';
+import { sendOtp, verifyOtp, googleSignIn, useGoogleAuth } from '../services/auth';
 
 const { width } = Dimensions.get('window');
 
@@ -51,7 +51,7 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
 
-  const { promptAsync } = useGoogleAuth();
+  const { request, response, promptAsync } = useGoogleAuth();
 
   const transitionTo = (nextStep: AuthStep) => {
     Animated.timing(fadeAnim, {
@@ -71,20 +71,50 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
+    setError(null);
     try {
-      // In a real app, you'd call promptAsync()
-      // result = await promptAsync();
-      // For this stub, we'll simulate success
-      console.log('Google Sign-In initiated');
-      setTimeout(() => {
-        setLoading(false);
-        transitionTo(AuthStep.PHONE_STEP);
-      }, 1000);
+      await promptAsync();
     } catch (err) {
       setError('Google Sign-In failed');
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const handleGoogleResponse = async () => {
+      if (response?.type === 'success') {
+        const accessToken = response.authentication?.accessToken;
+        if (!accessToken) {
+          setError('Google Sign-In failed');
+          setLoading(false);
+          return;
+        }
+        const result = await googleSignIn(accessToken);
+        setLoading(false);
+        if (result.success) {
+          await saveSettings({
+            googleSignInComplete: true,
+            userId: result.userId,
+            user: {
+              name: result.name || '',
+              email: result.email || '',
+              phoneNumber: '',
+            },
+          });
+          transitionTo(AuthStep.PHONE_STEP);
+        } else {
+          setError(result.error || 'Google Sign-In failed');
+        }
+      } else if (response?.type === 'error') {
+        setError('Google Sign-In failed');
+        setLoading(false);
+      } else if (response?.type === 'cancel' || response?.type === 'dismiss') {
+        setLoading(false);
+      }
+    };
+
+    handleGoogleResponse();
+  }, [response]);
 
   const handleSendOtp = async () => {
     if (phone.length < 10) {
@@ -129,7 +159,7 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
       <TouchableOpacity
         style={styles.googleButton}
         onPress={handleGoogleSignIn}
-        disabled={loading}
+        disabled={loading || !request}
       >
         <BlurView intensity={20} tint="light" style={styles.blurButton}>
           {loading ? (

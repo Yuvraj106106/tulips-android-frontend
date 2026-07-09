@@ -52,6 +52,27 @@ export async function verifyOtp(phone: string, code: string): Promise<AuthRespon
   }
 }
 
+export async function googleSignIn(accessToken: string): Promise<AuthResponse & { email?: string; name?: string }> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/auth/google-signin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessToken }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      return { success: false, error: data.error || 'Google sign-in failed' };
+    }
+
+    return { success: true, userId: data.userId, email: data.email, name: data.name };
+  } catch (error) {
+    console.error('Error during Google sign-in:', error);
+    return { success: false, error: 'Network error during Google sign-in' };
+  }
+}
+
 /**
  * Hook to use Google Authentication
  * Note: This requires proper setup in Google Cloud Console

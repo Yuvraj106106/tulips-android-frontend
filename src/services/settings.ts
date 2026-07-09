@@ -8,6 +8,7 @@ export interface Settings {
   permissionsGranted?: boolean;
   onboardingComplete?: boolean;
   signUpComplete?: boolean;
+  googleSignInComplete?: boolean;
   userId?: string;
   phone?: string;
   dateOfBirth?: string; // ISO format YYYY-MM-DD
