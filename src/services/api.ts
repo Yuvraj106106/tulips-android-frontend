@@ -1,4 +1,4 @@
-import { BACKEND_URL } from '../constants/config';
+import { BACKEND_URL, BACKEND_API_SECRET, TEMP_USER_ID } from '../constants/config';
 import { loadSettings } from './settings';
 
 export async function sendMessage(message: string, conversationId: string) {
@@ -12,10 +12,12 @@ export async function sendMessage(message: string, conversationId: string) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-api-secret': BACKEND_API_SECRET,
       },
       body: JSON.stringify({
         message,
         conversationId,
+        userId: TEMP_USER_ID,
         language: settings.language,
         voiceSpeed: settings.voiceSpeed,
         voiceEnabled: settings.voiceEnabled,
