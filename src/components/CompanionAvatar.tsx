@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { GLView } from 'expo-gl';
+import { GLView, ExpoWebGLRenderingContext } from 'expo-gl';
 import { Renderer, loadTextureAsync } from 'expo-three';
 import * as THREE from 'three';
 import { Asset } from 'expo-asset';
@@ -20,7 +20,7 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
   const rendererRef = useRef<Renderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const glRef = useRef<WebGLRenderingContext | null>(null);
+  const glRef = useRef<ExpoWebGLRenderingContext | null>(null);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -139,7 +139,7 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
     return textureCache.size > 0;
   };
 
-  const onContextCreate = async (gl: WebGLRenderingContext) => {
+  const onContextCreate = async (gl: ExpoWebGLRenderingContext) => {
     if (!mounted.current) return;
 
     glRef.current = gl;
