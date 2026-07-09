@@ -30,8 +30,10 @@ export const companions: Record<CompanionId, CompanionConfig> = {
   krishna: {
     id: 'krishna',
     name: 'Krishna',
-    // Real high-quality model.
-    modelAsset: require('../../assets/krishna_hq.glb'),
+    // Temporary small placeholder model for faster dev/testing.
+    // To restore original high-quality avatar, swap back to:
+    // modelAsset: require('../../assets/krishna_hq.glb'),
+    modelAsset: require('../../assets/placeholder_avatar.glb'),
     introVideoAsset: require('../../assets/placeholder_video.mp4'), // TODO: swap for real video when ready
     themeColor: '#FFBF00',
     backgroundColor: '#0a0a1a',
