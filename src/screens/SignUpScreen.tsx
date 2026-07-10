@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import { BlurView } from 'expo-blur';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { COLORS, SPACING, TYPOGRAPHY } from '../constants/theme';
 import { saveSettings } from '../services/settings';
-import { sendOtp, verifyOtp, googleSignIn, useGoogleAuth, emailSignUp, emailLogin } from '../services/auth';
+import { sendOtp, verifyOtp, googleSignIn, nativeGoogleSignIn, emailSignUp, emailLogin } from '../services/auth';
 
 const { width } = Dimensions.get('window');
 
@@ -56,8 +56,6 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
 
-  const { request, response, promptAsync } = useGoogleAuth();
-
   const transitionTo = (nextStep: AuthStep) => {
     Animated.timing(fadeAnim, {
       toValue: 0,
@@ -78,49 +76,33 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
     setLoading(true);
     setError(null);
     try {
-      await promptAsync();
+      const idToken = await nativeGoogleSignIn();
+      if (!idToken) {
+        setLoading(false);
+        return; // user cancelled
+      }
+      const result = await googleSignIn(idToken);
+      setLoading(false);
+      if (result.success) {
+        await saveSettings({
+          googleSignInComplete: true,
+          userId: result.userId,
+          user: {
+            name: result.name || '',
+            email: result.email || '',
+            phoneNumber: '',
+          },
+        });
+        transitionTo(AuthStep.PHONE_STEP);
+      } else {
+        setError(result.error || 'Google Sign-In failed');
+      }
     } catch (err) {
+      console.error('Google Sign-In error:', err);
       setError('Google Sign-In failed');
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    const handleGoogleResponse = async () => {
-      if (response?.type === 'success') {
-        const accessToken = response.authentication?.accessToken;
-        if (!accessToken) {
-          console.error('Google Sign-In: no access token in response', response);
-          setError('Google Sign-In failed');
-          setLoading(false);
-          return;
-        }
-        const result = await googleSignIn(accessToken);
-        setLoading(false);
-        if (result.success) {
-          await saveSettings({
-            googleSignInComplete: true,
-            userId: result.userId,
-            user: {
-              name: result.name || '',
-              email: result.email || '',
-              phoneNumber: '',
-            },
-          });
-          transitionTo(AuthStep.PHONE_STEP);
-        } else {
-          setError(result.error || 'Google Sign-In failed');
-        }
-      } else if (response?.type === 'error') {
-        setError('Google Sign-In failed');
-        setLoading(false);
-      } else if (response?.type === 'cancel' || response?.type === 'dismiss') {
-        setLoading(false);
-      }
-    };
-
-    handleGoogleResponse();
-  }, [response]);
 
   const handleEmailAuth = async () => {
     if (!email.includes('@') || !email.includes('.')) {
@@ -198,7 +180,7 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
       <TouchableOpacity
         style={styles.googleButton}
         onPress={handleGoogleSignIn}
-        disabled={loading || !request}
+        disabled={loading}
       >
         <BlurView intensity={20} tint="light" style={styles.blurButton}>
           {loading ? (

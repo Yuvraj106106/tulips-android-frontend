@@ -1,5 +1,7 @@
 export const BACKEND_URL = 'https://tulip-backend-fcrw.onrender.com';
 export const GOOGLE_CLIENT_ID = '195981996582-p1dr4sadsuiemg5petnbk8gvtn0h0nng.apps.googleusercontent.com';
+// Web application type OAuth client — used as webClientId for @react-native-google-signin/google-signin
+export const GOOGLE_WEB_CLIENT_ID = '195981996582-5khiunvevc89bfqmvgghnot6pe7fv9di.apps.googleusercontent.com';
 
 // Shared secret for backend auth (must match BACKEND_API_SECRET on Render).
 // TEMP: hardcoded like GOOGLE_CLIENT_ID above until a proper secrets/build-config setup exists.

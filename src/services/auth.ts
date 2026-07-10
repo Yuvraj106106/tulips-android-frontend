@@ -1,9 +1,10 @@
-import * as Google from 'expo-auth-session/providers/google';
-import { ResponseType } from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
-import { GOOGLE_CLIENT_ID, BACKEND_URL } from '../constants/config';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import { GOOGLE_WEB_CLIENT_ID, BACKEND_URL } from '../constants/config';
 
-WebBrowser.maybeCompleteAuthSession();
+GoogleSignin.configure({
+  webClientId: GOOGLE_WEB_CLIENT_ID,
+  offlineAccess: false,
+});
 
 export interface AuthResponse {
   success: boolean;
@@ -53,12 +54,12 @@ export async function verifyOtp(phone: string, code: string): Promise<AuthRespon
   }
 }
 
-export async function googleSignIn(accessToken: string): Promise<AuthResponse & { email?: string; name?: string }> {
+export async function googleSignIn(idToken: string): Promise<AuthResponse & { email?: string; name?: string }> {
   try {
     const response = await fetch(`${BACKEND_URL}/api/auth/google-signin`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accessToken }),
+      body: JSON.stringify({ idToken }),
     });
 
     const data = await response.json();
@@ -117,21 +118,27 @@ export async function emailLogin(email: string, password: string): Promise<AuthR
 }
 
 /**
- * Hook to use Google Authentication
- * Note: This requires proper setup in Google Cloud Console
- * and configuring the GOOGLE_CLIENT_ID in src/constants/config.ts
+ * Native Google Sign-In using @react-native-google-signin/google-signin.
+ * Returns an idToken on success, or null on user cancel.
+ * Throws on real errors (Play Services missing, etc.) — caller should catch.
  */
-export function useGoogleAuth() {
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: GOOGLE_CLIENT_ID,
-    responseType: ResponseType.Token,
-    scopes: ['openid', 'profile', 'email'],
-    // Add other client IDs if needed (iosClientId, webClientId, etc.)
-  });
-
-  return {
-    request,
-    response,
-    promptAsync,
-  };
+export async function nativeGoogleSignIn(): Promise<string | null> {
+  await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+  try {
+    const result = await GoogleSignin.signIn();
+    // v13+ API shape: { type: 'success', data: { idToken, ... } } | { type: 'cancelled' }
+    if ('type' in result && result.type === 'cancelled') {
+      return null;
+    }
+    const idToken = 'data' in result ? result.data?.idToken : (result as any).idToken;
+    if (!idToken) {
+      throw new Error('No idToken returned from Google Sign-In');
+    }
+    return idToken;
+  } catch (err: any) {
+    if (err.code === statusCodes.SIGN_IN_CANCELLED) {
+      return null;
+    }
+    throw err;
+  }
 }
