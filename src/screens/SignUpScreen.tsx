@@ -157,6 +157,8 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
       <Text style={styles.title}>Welcome to Tulip</Text>
       <Text style={styles.subtitle}>Connect with your spiritual guide</Text>
 
+      {error && <Text style={styles.errorText}>{error}</Text>}
+
       <TouchableOpacity
         style={styles.googleButton}
         onPress={handleGoogleSignIn}

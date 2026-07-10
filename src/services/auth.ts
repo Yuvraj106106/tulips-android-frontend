@@ -83,6 +83,7 @@ export function useGoogleAuth() {
   const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId: GOOGLE_CLIENT_ID,
     responseType: ResponseType.Token,
+    scopes: ['openid', 'profile', 'email'],
     // Add other client IDs if needed (iosClientId, webClientId, etc.)
   });
 
