@@ -15,7 +15,7 @@ import { BlurView } from 'expo-blur';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { COLORS, SPACING, TYPOGRAPHY } from '../constants/theme';
 import { saveSettings } from '../services/settings';
-import { sendOtp, verifyOtp, googleSignIn, useGoogleAuth } from '../services/auth';
+import { sendOtp, verifyOtp, googleSignIn, useGoogleAuth, emailSignUp, emailLogin } from '../services/auth';
 
 const { width } = Dimensions.get('window');
 
@@ -37,6 +37,7 @@ interface Props {
 
 enum AuthStep {
   GOOGLE_STEP,
+  EMAIL_STEP,
   PHONE_STEP,
   OTP_STEP,
 }
@@ -45,6 +46,10 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
   const [step, setStep] = useState<AuthStep>(AuthStep.GOOGLE_STEP);
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [isLoginMode, setIsLoginMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -117,6 +122,37 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
     handleGoogleResponse();
   }, [response]);
 
+  const handleEmailAuth = async () => {
+    if (!email.includes('@') || !email.includes('.')) {
+      setError('Please enter a valid email');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    const result = isLoginMode
+      ? await emailLogin(email, password)
+      : await emailSignUp(email, password, name);
+    setLoading(false);
+    if (result.success) {
+      await saveSettings({
+        googleSignInComplete: true,
+        userId: result.userId,
+        user: {
+          name: result.name || name || '',
+          email: result.email || email,
+          phoneNumber: '',
+        },
+      });
+      transitionTo(AuthStep.PHONE_STEP);
+    } else {
+      setError(result.error || 'Authentication failed');
+    }
+  };
+
   const handleSendOtp = async () => {
     if (phone.length < 10) {
       setError('Please enter a valid phone number');
@@ -173,6 +209,13 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
         </BlurView>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        style={styles.linkButton}
+        onPress={() => transitionTo(AuthStep.EMAIL_STEP)}
+      >
+        <Text style={styles.linkText}>Or sign up with email</Text>
+      </TouchableOpacity>
+
       {__DEV__ && (
         <TouchableOpacity
           style={styles.linkButton}
@@ -181,6 +224,87 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.linkText}>Skip (dev only)</Text>
         </TouchableOpacity>
       )}
+    </Animated.View>
+  );
+
+  const renderEmailStep = () => (
+    <Animated.View style={[styles.stepContainer, { opacity: fadeAnim }]}>
+      <Text style={styles.title}>{isLoginMode ? 'Log In' : 'Sign Up'}</Text>
+      <Text style={styles.subtitle}>
+        {isLoginMode ? 'Log in with your email' : 'Create an account with email'}
+      </Text>
+
+      {!isLoginMode && (
+        <BlurView intensity={15} tint="light" style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Name"
+            placeholderTextColor="#888"
+            value={name}
+            onChangeText={setName}
+          />
+        </BlurView>
+      )}
+
+      <BlurView intensity={15} tint="light" style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#888"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={email}
+          onChangeText={setEmail}
+        />
+      </BlurView>
+
+      <BlurView intensity={15} tint="light" style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#888"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+      </BlurView>
+
+      {error && <Text style={styles.errorText}>{error}</Text>}
+
+      <TouchableOpacity
+        style={styles.primaryButton}
+        onPress={handleEmailAuth}
+        disabled={loading}
+      >
+        <BlurView intensity={30} tint="light" style={styles.blurButton}>
+          {loading ? (
+            <ActivityIndicator color={COLORS.background} />
+          ) : (
+            <Text style={[styles.buttonText, { color: COLORS.background }]}>
+              {isLoginMode ? 'Log In' : 'Sign Up'}
+            </Text>
+          )}
+        </BlurView>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.linkButton}
+        onPress={() => {
+          setIsLoginMode(!isLoginMode);
+          setError(null);
+        }}
+      >
+        <Text style={styles.linkText}>
+          {isLoginMode ? "Don't have an account? Sign up" : 'Already have an account? Log in'}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.linkButton}
+        onPress={() => transitionTo(AuthStep.GOOGLE_STEP)}
+      >
+        <Text style={styles.linkText}>Back</Text>
+      </TouchableOpacity>
     </Animated.View>
   );
 
@@ -273,6 +397,7 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
         <Text style={styles.logo}>Tulip 🌸</Text>
 
         {step === AuthStep.GOOGLE_STEP && renderGoogleStep()}
+        {step === AuthStep.EMAIL_STEP && renderEmailStep()}
         {step === AuthStep.PHONE_STEP && renderPhoneStep()}
         {step === AuthStep.OTP_STEP && renderOtpStep()}
       </View>
