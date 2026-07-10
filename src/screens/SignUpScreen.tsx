@@ -85,6 +85,7 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
       if (response?.type === 'success') {
         const accessToken = response.authentication?.accessToken;
         if (!accessToken) {
+          console.error('Google Sign-In: no access token in response', response);
           setError('Google Sign-In failed');
           setLoading(false);
           return;

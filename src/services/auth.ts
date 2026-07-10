@@ -1,4 +1,5 @@
 import * as Google from 'expo-auth-session/providers/google';
+import { ResponseType } from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { GOOGLE_CLIENT_ID, BACKEND_URL } from '../constants/config';
 
@@ -81,6 +82,7 @@ export async function googleSignIn(accessToken: string): Promise<AuthResponse & 
 export function useGoogleAuth() {
   const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId: GOOGLE_CLIENT_ID,
+    responseType: ResponseType.Token,
     // Add other client IDs if needed (iosClientId, webClientId, etc.)
   });
 
