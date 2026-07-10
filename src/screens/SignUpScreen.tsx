@@ -169,6 +169,15 @@ const SignUpScreen: React.FC<Props> = ({ navigation }) => {
           )}
         </BlurView>
       </TouchableOpacity>
+
+      {__DEV__ && (
+        <TouchableOpacity
+          style={styles.linkButton}
+          onPress={() => transitionTo(AuthStep.PHONE_STEP)}
+        >
+          <Text style={styles.linkText}>Skip (dev only)</Text>
+        </TouchableOpacity>
+      )}
     </Animated.View>
   );
 
