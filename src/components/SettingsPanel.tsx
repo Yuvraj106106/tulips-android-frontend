@@ -15,6 +15,7 @@ import { BlurView } from 'expo-blur';
 import { COLORS, SPACING, TYPOGRAPHY } from '../constants/theme';
 import { Settings, loadSettings, saveSettings } from '../services/settings';
 import FloatingBubble from '../services/FloatingBubble';
+import MemoryPanel from './MemoryPanel';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 
@@ -26,6 +27,7 @@ interface SettingsPanelProps {
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({ isVisible, onClose, onSignOut }) => {
   const [settings, setSettings] = useState<Settings>({});
+  const [isMemoryVisible, setIsMemoryVisible] = useState(false);
   const [permissions, setPermissions] = useState({
     microphone: false,
     floatingBubble: false,
@@ -233,6 +235,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isVisible, onClose, onSig
               <TouchableOpacity disabled style={[styles.actionButton, { opacity: 0.5 }]}>
                 <Text style={styles.buttonText}>Change Companion (Coming Soon)</Text>
               </TouchableOpacity>
+              <TouchableOpacity style={styles.actionButton} onPress={() => setIsMemoryVisible(true)}>
+                <Text style={styles.buttonText}>What does it remember about me?</Text>
+              </TouchableOpacity>
             </View>
 
             {renderDivider()}
@@ -269,6 +274,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isVisible, onClose, onSig
           </ScrollView>
         </BlurView>
       </View>
+      <MemoryPanel isVisible={isMemoryVisible} onClose={() => setIsMemoryVisible(false)} />
     </Modal>
   );
 };
