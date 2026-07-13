@@ -51,10 +51,10 @@ const MemoryPanel: React.FC<MemoryPanelProps> = ({ isVisible, onClose }) => {
   }, [isVisible]);
 
   const getUserId = async () => {
-    // NOTE: chat requests (src/services/api.ts) currently always send TEMP_USER_ID
-    // regardless of sign-in status. Memory must use the same id or it'll read an
-    // empty bucket. Update this once api.ts switches to the real signed-in userId.
-    return TEMP_USER_ID;
+    // Must match src/services/api.ts resolution: real signed-in userId, falling
+    // back to TEMP_USER_ID only if the user hasn't signed in yet.
+    const settings = await loadSettings();
+    return settings.userId || TEMP_USER_ID;
   };
 
   const loadMemory = async () => {

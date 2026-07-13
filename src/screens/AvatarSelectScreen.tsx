@@ -22,18 +22,21 @@ const ITEM_WIDTH = width * 0.75;
 const ITEM_SPACING = (width - ITEM_WIDTH) / 2;
 
 type RootStackParamList = {
-  AvatarSelect: undefined;
+  AvatarSelect: { fromSettings?: boolean } | undefined;
   PortalTransition: undefined;
   CinematicIntro: undefined;
 };
 
 type AvatarSelectNavigationProp = StackNavigationProp<RootStackParamList, 'AvatarSelect'>;
+type AvatarSelectRouteProp = { params?: { fromSettings?: boolean } };
 
 interface Props {
   navigation: AvatarSelectNavigationProp;
+  route?: AvatarSelectRouteProp;
 }
 
-const AvatarSelectScreen: React.FC<Props> = ({ navigation }) => {
+const AvatarSelectScreen: React.FC<Props> = ({ navigation, route }) => {
+  const fromSettings = route?.params?.fromSettings === true;
   const scrollX = useRef(new Animated.Value(0)).current;
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -61,7 +64,12 @@ const AvatarSelectScreen: React.FC<Props> = ({ navigation }) => {
       console.error(`Background GLB download failed for ${selected.id}:`, err);
     });
 
-    // (b) immediately navigate to AvatarIntro (CinematicIntro) screen
+    // (b) onboarding flow plays the full cinematic intro; mid-app switching
+    // from Settings just returns to chat with the new companion applied.
+    if (fromSettings) {
+      navigation.goBack();
+      return;
+    }
     navigation.replace('PortalTransition' as any);
   };
 

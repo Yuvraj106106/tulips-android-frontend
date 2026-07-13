@@ -19,7 +19,7 @@ export type RootStackParamList = {
   DateOfBirth: undefined;
   Language: undefined;
   Permissions: undefined;
-  AvatarSelect: undefined;
+  AvatarSelect: { fromSettings?: boolean } | undefined;
   PortalTransition: undefined;
   CinematicIntro: undefined;
   Chat: undefined;

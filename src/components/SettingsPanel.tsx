@@ -16,6 +16,7 @@ import { COLORS, SPACING, TYPOGRAPHY } from '../constants/theme';
 import { Settings, loadSettings, saveSettings } from '../services/settings';
 import FloatingBubble from '../services/FloatingBubble';
 import MemoryPanel from './MemoryPanel';
+import { companions } from '../companions/config';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 
@@ -23,9 +24,10 @@ interface SettingsPanelProps {
   isVisible: boolean;
   onClose: () => void;
   onSignOut: () => void;
+  navigation: any;
 }
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ isVisible, onClose, onSignOut }) => {
+const SettingsPanel: React.FC<SettingsPanelProps> = ({ isVisible, onClose, onSignOut, navigation }) => {
   const [settings, setSettings] = useState<Settings>({});
   const [isMemoryVisible, setIsMemoryVisible] = useState(false);
   const [permissions, setPermissions] = useState({
@@ -230,10 +232,18 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isVisible, onClose, onSig
             <View style={styles.section}>
               {renderSectionTitle('COMPANION')}
               <View style={styles.row}>
-                <Text style={styles.rowLabel}>Current: {settings.selectedCompanion === 'krishna' ? 'Krishna' : 'Other'}</Text>
+                <Text style={styles.rowLabel}>
+                  Current: {settings.selectedCompanion ? companions[settings.selectedCompanion].name : 'Krishna'}
+                </Text>
               </View>
-              <TouchableOpacity disabled style={[styles.actionButton, { opacity: 0.5 }]}>
-                <Text style={styles.buttonText}>Change Companion (Coming Soon)</Text>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => {
+                  onClose();
+                  navigation.navigate('AvatarSelect', { fromSettings: true });
+                }}
+              >
+                <Text style={styles.buttonText}>Change Companion</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionButton} onPress={() => setIsMemoryVisible(true)}>
                 <Text style={styles.buttonText}>What does it remember about me?</Text>

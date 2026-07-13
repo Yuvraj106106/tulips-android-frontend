@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Text, PermissionsAndroid, Platform, Alert } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useFocusEffect } from '@react-navigation/native';
 import MessageBubble from '../components/MessageBubble';
 import InputBar from '../components/InputBar';
 import FloatingBubble from '../services/FloatingBubble';
@@ -8,8 +9,10 @@ import { sendMessage } from '../services/api';
 import { playBase64Audio, stopAudio } from '../services/audioPlayer';
 import { ExpoSpeechRecognitionModule, addSpeechRecognitionListener } from 'expo-speech-recognition';
 import { Audio } from 'expo-av';
-import KrishnaAvatar from '../components/KrishnaAvatar';
+import CompanionAvatar from '../components/CompanionAvatar';
 import SettingsPanel from '../components/SettingsPanel';
+import { loadSettings } from '../services/settings';
+import { CompanionId } from '../companions/config';
 
 interface Message {
   id: string;
@@ -38,6 +41,15 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
   const [isBubbleEnabled, setIsBubbleEnabled] = useState(false);
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
   const [sttError, setSttError] = useState<string | null>(null);
+  const [selectedCompanion, setSelectedCompanion] = useState<CompanionId>('krishna');
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadSettings().then((s) => {
+        if (s.selectedCompanion) setSelectedCompanion(s.selectedCompanion);
+      });
+    }, [])
+  );
   const scrollViewRef = useRef<ScrollView>(null);
   const modeRef = useRef(mode);
   const isProcessingRef = useRef(false);
@@ -311,6 +323,7 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
         isVisible={isSettingsVisible}
         onClose={() => setIsSettingsVisible(false)}
         onSignOut={handleSignOut}
+        navigation={navigation}
       />
       <View style={styles.topBar}>
         <View style={styles.modeToggleContainer}>
@@ -338,7 +351,7 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
       {mode === 'voice' ? (
         <View style={styles.voiceContainer}>
           <View style={styles.avatarContainer}>
-            <KrishnaAvatar />
+            <CompanionAvatar companionId={selectedCompanion} />
           </View>
           <View style={styles.voiceControls}>
             <Text style={styles.voiceStatus}>

@@ -17,7 +17,7 @@ export async function sendMessage(message: string, conversationId: string) {
       body: JSON.stringify({
         message,
         conversationId,
-        userId: TEMP_USER_ID,
+        userId: settings.userId || TEMP_USER_ID,
         language: settings.language,
         voiceSpeed: settings.voiceSpeed,
         voiceEnabled: settings.voiceEnabled,
