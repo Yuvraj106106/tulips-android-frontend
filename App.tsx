@@ -12,6 +12,8 @@ import PortalTransitionScreen from './src/screens/PortalTransitionScreen';
 import CinematicIntroScreen from './src/screens/CinematicIntroScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import { StatusBar } from 'expo-status-bar';
+import { View } from 'react-native';
+import FloatingAvatar from './src/components/FloatingAvatar';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -29,38 +31,41 @@ const Stack = createStackNavigator<RootStackParamList>();
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <StatusBar style="auto" />
-      <Stack.Navigator
-        initialRouteName="Splash"
-        screenOptions={{
-          headerShown: false
-        }}
-      >
-        <Stack.Screen name="Splash" component={SplashScreen} />
-        <Stack.Screen name="SignUp" component={SignUpScreen} />
-        <Stack.Screen name="DateOfBirth" component={DateOfBirthScreen} />
-        <Stack.Screen name="Language" component={LanguageScreen} />
-        <Stack.Screen name="Permissions" component={PermissionsScreen} />
-        <Stack.Screen name="AvatarSelect" component={AvatarSelectScreen} />
-        <Stack.Screen name="PortalTransition" component={PortalTransitionScreen} />
-        <Stack.Screen name="CinematicIntro" component={CinematicIntroScreen} />
-        <Stack.Screen
-          name="Chat"
-          component={ChatScreen}
-          options={{
-            headerShown: true,
-            title: 'Krishna AI',
-            headerStyle: {
-              backgroundColor: '#FFBF00',
-            },
-            headerTintColor: '#fff',
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
+    <View style={{ flex: 1 }}>
+      <NavigationContainer>
+        <StatusBar style="auto" />
+        <Stack.Navigator
+          initialRouteName="Splash"
+          screenOptions={{
+            headerShown: false
           }}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+        >
+          <Stack.Screen name="Splash" component={SplashScreen} />
+          <Stack.Screen name="SignUp" component={SignUpScreen} />
+          <Stack.Screen name="DateOfBirth" component={DateOfBirthScreen} />
+          <Stack.Screen name="Language" component={LanguageScreen} />
+          <Stack.Screen name="Permissions" component={PermissionsScreen} />
+          <Stack.Screen name="AvatarSelect" component={AvatarSelectScreen} />
+          <Stack.Screen name="PortalTransition" component={PortalTransitionScreen} />
+          <Stack.Screen name="CinematicIntro" component={CinematicIntroScreen} />
+          <Stack.Screen
+            name="Chat"
+            component={ChatScreen}
+            options={{
+              headerShown: true,
+              title: 'Krishna AI',
+              headerStyle: {
+                backgroundColor: '#FFBF00',
+              },
+              headerTintColor: '#fff',
+              headerTitleStyle: {
+                fontWeight: 'bold',
+              },
+            }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+      <FloatingAvatar />
+    </View>
   );
 }
