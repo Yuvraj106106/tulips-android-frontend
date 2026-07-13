@@ -104,7 +104,7 @@ export const FloatingAvatar: React.FC = () => {
           }, 8000);
         },
         (error) => {
-          console.error('Porcupine Error in FloatingAvatar:', error);
+          console.error('Wake-word detection error in FloatingAvatar:', error);
         }
       );
     };
