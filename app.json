@@ -8,7 +8,12 @@
     "userInterfaceStyle": "light",
     "scheme": "tulips",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSSpeechRecognitionUsageDescription": "Allow Tulip to use speech recognition.",
+        "NSMicrophoneUsageDescription": "Allow Tulip to use the microphone to listen to your voice."
+      },
+      "bundleIdentifier": "com.yuviiix.tulip"
     },
     "android": {
       "package": "com.yuviiix.tulip",
@@ -18,7 +23,10 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
