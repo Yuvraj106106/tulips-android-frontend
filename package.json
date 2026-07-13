@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "node_modules/expo/AppEntry.js",
   "dependencies": {
-    "@picovoice/porcupine-react-native": "^4.0.0",
     "@picovoice/react-native-voice-processor": "^1.2.3",
+    "onnxruntime-react-native": "^1.19.2",
     "@react-native-google-signin/google-signin": "^16.1.2",
     "@react-native-masked-view/masked-view": "0.3.2",
     "@react-navigation/native": "^7.3.3",
