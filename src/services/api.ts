@@ -41,3 +41,39 @@ export async function sendMessage(message: string, conversationId: string) {
     throw error;
   }
 }
+
+export async function sendWakeEvent() {
+  console.log("🚀 sendWakeEvent CALLED");
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    const settings = await loadSettings();
+    const response = await fetch(`${BACKEND_URL}/voice/wake-event`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-secret': BACKEND_API_SECRET,
+      },
+      body: JSON.stringify({
+        userId: settings.userId || TEMP_USER_ID,
+        companionId: settings.selectedCompanion,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('Error sending wake event:', error);
+    if (error.name === 'AbortError') {
+      throw new Error('TIMEOUT');
+    }
+    throw error;
+  }
+}
