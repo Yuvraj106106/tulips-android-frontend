@@ -8,3 +8,4 @@ android/build/
 android/app/src/main/assets/*.bundle
 *.apk
 .gradle/
+ios/
