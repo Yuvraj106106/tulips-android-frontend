@@ -1,6 +1,7 @@
 import { InferenceSession, Tensor } from 'onnxruntime-react-native';
 import { VoiceProcessor, VoiceProcessorError } from '@picovoice/react-native-voice-processor';
 import { Asset } from 'expo-asset';
+import * as FileSystem from 'expo-file-system';
 
 /**
  * Free, on-device wake-word detection using openWakeWord (Apache-2.0, free forever).
@@ -198,7 +199,7 @@ export async function startWakeWordDetection(
       capturedSamples = [];
       capturing = true;
       console.log('🔴 Capturing 2s of raw audio — speak "Hey Jarvis" now...');
-      setTimeout(() => {
+      setTimeout(async () => {
         capturing = false;
         const buf = new Int16Array(capturedSamples);
         const bytes = new Uint8Array(buf.buffer);
@@ -206,11 +207,17 @@ export async function startWakeWordDetection(
         for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
         const b64 = btoa(binary);
         console.log('🔴 CAPTURE_LEN=', b64.length, 'samples=', capturedSamples.length);
-        const CHUNK_SIZE = 1000;
-        for (let i = 0; i < b64.length; i += CHUNK_SIZE) {
-          console.log(`B64[${i / CHUNK_SIZE}]:${b64.slice(i, i + CHUNK_SIZE)}`);
+        // Written to a file instead of console.log: Metro's terminal scrollback was
+        // silently truncating large (~85k char) base64 payloads mid-stream.
+        const path = `${FileSystem.documentDirectory}wakeword_debug.b64`;
+        try {
+          await FileSystem.writeAsStringAsync(path, b64, {
+            encoding: FileSystem.EncodingType.UTF8,
+          });
+          console.log('✅ CAPTURE_SAVED_TO:', path);
+        } catch (e) {
+          console.error('❌ Failed to write debug capture:', e);
         }
-        console.log('🔴 CAPTURE_END');
       }, 2000);
     };
 
