@@ -1,7 +1,7 @@
 import { InferenceSession, Tensor } from 'onnxruntime-react-native';
 import { VoiceProcessor, VoiceProcessorError } from '@picovoice/react-native-voice-processor';
 import { Asset } from 'expo-asset';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 /**
  * Free, on-device wake-word detection using openWakeWord (Apache-2.0, free forever).
