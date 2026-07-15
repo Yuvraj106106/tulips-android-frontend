@@ -144,11 +144,18 @@ async function processAudioChunk(samples: number[]): Promise<number> {
 
   const steps = Math.floor(accumulatedSamples / FRAME_LENGTH);
   const windowsToCompute: number[][][] = [];
+  const L = melspecTransformedTail.length;
   for (let i = steps - 1; i >= 0; i--) {
     let ndx = -EMBED_STEP * i;
-    if (ndx === 0) ndx = melspecTransformedTail.length;
-    const start = melspecTransformedTail.length - EMBED_WINDOW + ndx;
-    const window = melspecTransformedTail.slice(start, start + EMBED_WINDOW);
+    if (ndx === 0) ndx = L;
+    // Mirror Python's arr[-76+ndx : ndx] slicing, where ndx may be a Python-style
+    // negative index (i > 0) or the absolute buffer length (i === 0). Each bound
+    // must be resolved to an absolute index independently.
+    const rawStart = -EMBED_WINDOW + ndx;
+    const rawStop = ndx;
+    const start = rawStart >= 0 ? rawStart : L + rawStart;
+    const stop = rawStop >= 0 ? rawStop : L + rawStop;
+    const window = melspecTransformedTail.slice(start, stop);
     if (window.length === EMBED_WINDOW) windowsToCompute.push(window);
   }
 
@@ -185,18 +192,10 @@ export async function startWakeWordDetection(
 
     const voiceProcessor = VoiceProcessor.instance;
 
-    let frameCount = 0;
     const frameListener = (frame: number[]) => {
-      frameCount++;
-      if (frameCount % 10 === 1) {
-        let sumSq = 0;
-        for (let i = 0; i < frame.length; i++) sumSq += frame[i] * frame[i];
-        const rms = Math.sqrt(sumSq / frame.length);
-        console.log(`🎚️ frame#${frameCount} len=${frame.length} rms=${rms.toFixed(1)}`);
-      }
       processAudioChunk(frame)
         .then((score) => {
-          console.log('🔎 wakeword score=', score.toFixed(4));
+          if (score > 0.05) console.log('🔎 wakeword score=', score.toFixed(3));
           const now = Date.now();
           if (score > DETECTION_THRESHOLD && now - lastDetectionAt > RETRIGGER_COOLDOWN_MS) {
             lastDetectionAt = now;
