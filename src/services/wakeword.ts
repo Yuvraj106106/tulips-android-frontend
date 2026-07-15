@@ -185,10 +185,18 @@ export async function startWakeWordDetection(
 
     const voiceProcessor = VoiceProcessor.instance;
 
+    let frameCount = 0;
     const frameListener = (frame: number[]) => {
+      frameCount++;
+      if (frameCount % 10 === 1) {
+        let sumSq = 0;
+        for (let i = 0; i < frame.length; i++) sumSq += frame[i] * frame[i];
+        const rms = Math.sqrt(sumSq / frame.length);
+        console.log(`🎚️ frame#${frameCount} len=${frame.length} rms=${rms.toFixed(1)}`);
+      }
       processAudioChunk(frame)
         .then((score) => {
-          if (score > 0.02) console.log('🔎 wakeword score=', score.toFixed(3));
+          console.log('🔎 wakeword score=', score.toFixed(4));
           const now = Date.now();
           if (score > DETECTION_THRESHOLD && now - lastDetectionAt > RETRIGGER_COOLDOWN_MS) {
             lastDetectionAt = now;
