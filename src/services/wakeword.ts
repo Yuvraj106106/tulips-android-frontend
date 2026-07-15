@@ -188,6 +188,7 @@ export async function startWakeWordDetection(
     const frameListener = (frame: number[]) => {
       processAudioChunk(frame)
         .then((score) => {
+          if (score > 0.02) console.log('🔎 wakeword score=', score.toFixed(3));
           const now = Date.now();
           if (score > DETECTION_THRESHOLD && now - lastDetectionAt > RETRIGGER_COOLDOWN_MS) {
             lastDetectionAt = now;
