@@ -45,7 +45,8 @@
       "expo-asset",
       "@react-native-google-signin/google-signin",
       "onnxruntime-react-native",
-      "./plugins/withFloatingBubble.js"
+      "./plugins/withFloatingBubble.js",
+      "./plugins/withAssistant.js"
     ],
     "extra": {
       "eas": {

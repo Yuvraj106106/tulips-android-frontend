@@ -25,9 +25,10 @@ const CONVERSATION_ID = 'default_conversation';
 
 interface Props {
   navigation: StackNavigationProp<any, 'Chat'>;
+  route?: { params?: { autoStartListening?: boolean } };
 }
 
-const ChatScreen: React.FC<Props> = ({ navigation }) => {
+const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -90,6 +91,13 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
       if (silenceTimer.current) clearTimeout(silenceTimer.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (route?.params?.autoStartListening) {
+      startListening();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route?.params?.autoStartListening]);
 
   const processFinalTranscript = async () => {
     const text = pendingTranscript.current.trim();

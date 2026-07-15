@@ -140,6 +140,37 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isVisible, onClose, onSig
 
             {renderDivider()}
 
+            {/* ASSISTANT */}
+            {Platform.OS === 'android' && (
+              <>
+                <View style={styles.section}>
+                  {renderSectionTitle('ASSISTANT')}
+                  <Text style={styles.rowSubLabel}>
+                    Set Tulip as your phone's Digital Assistant to open it by holding the power button.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => {
+                      try {
+                        // Opens Settings > Apps > Default apps > Digital assistant app.
+                        // User must manually select Tulip from the list — this is a
+                        // system-level choice Android does not let apps set directly.
+                        Linking.sendIntent('android.settings.VOICE_INPUT_SETTINGS');
+                      } catch (e) {
+                        Alert.alert(
+                          'Could not open settings',
+                          'Please go to Settings > Apps > Default apps > Digital assistant app manually.'
+                        );
+                      }
+                    }}
+                  >
+                    <Text style={styles.buttonText}>Set as Default Assistant</Text>
+                  </TouchableOpacity>
+                </View>
+                {renderDivider()}
+              </>
+            )}
+
             {/* LANGUAGE */}
             <View style={styles.section}>
               {renderSectionTitle('LANGUAGE')}

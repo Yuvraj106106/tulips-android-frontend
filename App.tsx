@@ -1,6 +1,7 @@
 import "./src/polyfill";
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import React, { useEffect, useRef } from 'react';
+import { Linking } from 'react-native';
+import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import SplashScreen from './src/screens/SplashScreen';
 import SignUpScreen from './src/screens/SignUpScreen';
@@ -24,15 +25,51 @@ export type RootStackParamList = {
   AvatarSelect: { fromSettings?: boolean } | undefined;
   PortalTransition: undefined;
   CinematicIntro: undefined;
-  Chat: undefined;
+  Chat: { autoStartListening?: boolean } | undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 export default function App() {
+  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
+  const pendingDeepLinkUrl = useRef<string | null>(null);
+
+  // Handles the tulips://start-listening deep link fired by TulipVoiceInteractionSession
+  // when the user triggers Tulip as the system Digital Assistant (e.g. power-button hold).
+  // Jumps straight to Chat with mic listening already started — no wake-word needed since
+  // the user already manually triggered the assistant.
+  //
+  // NOTE: if the app is cold-launched via this deep link, it jumps straight past
+  // Splash/SignUp/onboarding into Chat. Fine for an already-onboarded user (the expected
+  // case, since this trigger only matters once someone has set Tulip as their assistant),
+  // but not yet tested against a fresh/never-onboarded install.
+  const handleDeepLink = (url: string | null) => {
+    if (!url || !url.includes('start-listening')) return;
+    if (navigationRef.current?.isReady()) {
+      navigationRef.current.navigate('Chat', { autoStartListening: true });
+    } else {
+      // NavigationContainer not mounted yet (cold start race) — replay once ready.
+      pendingDeepLinkUrl.current = url;
+    }
+  };
+
+  useEffect(() => {
+    Linking.getInitialURL().then(handleDeepLink);
+    const subscription = Linking.addEventListener('url', ({ url }) => handleDeepLink(url));
+    return () => subscription.remove();
+  }, []);
+
   return (
     <View style={{ flex: 1 }}>
-      <NavigationContainer>
+      <NavigationContainer
+        ref={navigationRef}
+        onReady={() => {
+          if (pendingDeepLinkUrl.current) {
+            handleDeepLink(pendingDeepLinkUrl.current);
+            pendingDeepLinkUrl.current = null;
+          }
+        }}
+      >
         <StatusBar style="auto" />
         <Stack.Navigator
           initialRouteName="Splash"
