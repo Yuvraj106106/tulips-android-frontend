@@ -192,7 +192,30 @@ export async function startWakeWordDetection(
 
     const voiceProcessor = VoiceProcessor.instance;
 
+    let capturedSamples: number[] = [];
+    let capturing = false;
+    (global as any).__captureAudioForDebug = () => {
+      capturedSamples = [];
+      capturing = true;
+      console.log('🔴 Capturing 2s of raw audio — speak "Hey Jarvis" now...');
+      setTimeout(() => {
+        capturing = false;
+        const buf = new Int16Array(capturedSamples);
+        const bytes = new Uint8Array(buf.buffer);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        const b64 = btoa(binary);
+        console.log('🔴 CAPTURE_LEN=', b64.length, 'samples=', capturedSamples.length);
+        const CHUNK_SIZE = 1000;
+        for (let i = 0; i < b64.length; i += CHUNK_SIZE) {
+          console.log(`B64[${i / CHUNK_SIZE}]:${b64.slice(i, i + CHUNK_SIZE)}`);
+        }
+        console.log('🔴 CAPTURE_END');
+      }, 2000);
+    };
+
     const frameListener = (frame: number[]) => {
+      if (capturing) capturedSamples.push(...frame);
       processAudioChunk(frame)
         .then((score) => {
           console.log('🔎 wakeword score=', score.toFixed(4));
@@ -227,6 +250,19 @@ export async function startWakeWordDetection(
     await voiceProcessor.start(FRAME_LENGTH, SAMPLE_RATE);
     running = true;
     console.log('🎙️ openWakeWord detection started (listening for "Hey Jarvis" placeholder wake word)');
+
+    setTimeout(() => {
+      console.log('⏳ 3... get ready to say "Hey Jarvis"');
+    }, 1000);
+    setTimeout(() => {
+      console.log('⏳ 2...');
+    }, 2000);
+    setTimeout(() => {
+      console.log('⏳ 1...');
+    }, 3000);
+    setTimeout(() => {
+      (global as any).__captureAudioForDebug();
+    }, 4000);
   } catch (error: any) {
     console.error('❌ Failed to start openWakeWord detection:', error);
     if (onError) onError(error);
