@@ -155,7 +155,16 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isVisible, onClose, onSig
                         // Opens Settings > Apps > Default apps > Digital assistant app.
                         // User must manually select Tulip from the list — this is a
                         // system-level choice Android does not let apps set directly.
-                        Linking.sendIntent('android.settings.VOICE_INPUT_SETTINGS');
+                        //
+                        // NOTE: sendIntent returns a Promise, so failures land as a
+                        // rejected promise, not a thrown sync error — a plain try/catch
+                        // around it never sees them. Attach .catch() explicitly.
+                        Linking.sendIntent('android.settings.VOICE_INPUT_SETTINGS').catch(() => {
+                          Alert.alert(
+                            'Could not open settings',
+                            'Please go to Settings > Apps > Default apps > Digital assistant app manually.'
+                          );
+                        });
                       } catch (e) {
                         Alert.alert(
                           'Could not open settings',

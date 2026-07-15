@@ -25,7 +25,9 @@ const CONVERSATION_ID = 'default_conversation';
 
 interface Props {
   navigation: StackNavigationProp<any, 'Chat'>;
-  route?: { params?: { autoStartListening?: boolean } };
+  // triggerId changes on every assistant trigger (even if autoStartListening stays true),
+  // so the effect below fires again on repeat triggers instead of only the first one.
+  route?: { params?: { autoStartListening?: boolean; triggerId?: number } };
 }
 
 const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
@@ -96,8 +98,11 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
     if (route?.params?.autoStartListening) {
       startListening();
     }
+    // Depend on triggerId (unique per trigger), not just the boolean — otherwise a second
+    // power-button-hold while already on this screen passes the same `true` value again,
+    // the dependency doesn't change, and this effect silently never re-fires.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [route?.params?.autoStartListening]);
+  }, [route?.params?.triggerId]);
 
   const processFinalTranscript = async () => {
     const text = pendingTranscript.current.trim();

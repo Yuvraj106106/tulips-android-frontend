@@ -25,7 +25,7 @@ export type RootStackParamList = {
   AvatarSelect: { fromSettings?: boolean } | undefined;
   PortalTransition: undefined;
   CinematicIntro: undefined;
-  Chat: { autoStartListening?: boolean } | undefined;
+  Chat: { autoStartListening?: boolean; triggerId?: number } | undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -46,7 +46,7 @@ export default function App() {
   const handleDeepLink = (url: string | null) => {
     if (!url || !url.includes('start-listening')) return;
     if (navigationRef.current?.isReady()) {
-      navigationRef.current.navigate('Chat', { autoStartListening: true });
+      navigationRef.current.navigate('Chat', { autoStartListening: true, triggerId: Date.now() });
     } else {
       // NavigationContainer not mounted yet (cold start race) — replay once ready.
       pendingDeepLinkUrl.current = url;
