@@ -8,43 +8,103 @@ import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
+import com.facebook.react.ReactApplication
+import com.facebook.react.ReactHost
+import com.facebook.react.ReactInstanceManager
+import com.facebook.react.ReactInstanceEventListener
+import com.facebook.react.ReactRootView
+import com.facebook.react.bridge.ReactContext
+import com.facebook.react.internal.featureflags.ReactNativeNewArchitectureFeatureFlags
+import com.facebook.react.interfaces.fabric.ReactSurface
 
 /**
  * Fires when the user triggers Tulip as the system assistant (power-button hold, assist
  * gesture, etc).
  *
- * AO-1 (Assistant Overlay, scaffold only — see TULIP_HANDOFF_v43.md):
- * The app must NEVER launch by default anymore. Instead, this session's own window IS
- * the overlay — it persists on screen instead of handing off to MainActivity. This file
- * only proves out "no MainActivity launch + window stays up"; the real content (a
- * ReactRootView with the live 3D avatar) is mounted in AO-2/AO-3. For now we render a
- * simple placeholder native view so the scaffold is visually verifiable on-device.
- *
- * Old MVP behavior (superseded, kept here as a comment for reference — do not restore
- * without checking TULIP_HANDOFF_v43.md first): this used to fire an ACTION_VIEW intent to
- * `tulips://start-listening`, launching MainActivity, then immediately call hide()+finish()
- * so it wouldn't block the launched activity. That whole handoff — and the SplashScreen/
- * deep-link race bug that lived inside it — is being removed by this AO-1 change; see
- * "Splash/deep-link race bug" section in the handoff for what to revisit.
+ * AO-2 (Assistant Overlay):
+ * Replaces the placeholderTextView in onCreateContentView() with a mounted ReactRootView / ReactSurface
+ * that renders real React Native content - without ever launching MainActivity.
  */
 class TulipVoiceInteractionSession(context: Context) : VoiceInteractionSession(context) {
 
+    private var container: FrameLayout? = null
+    private var reactRootView: ReactRootView? = null
+    private var reactSurface: ReactSurface? = null
+    private var eventListener: ReactInstanceEventListener? = null
+
     override fun onCreateContentView(): View {
-        // AO-2/AO-3 will replace this FrameLayout's single child with a ReactRootView
-        // rendering the warm/cached 3D avatar. Keep this container so later steps just
-        // swap what's added to it, without re-touching the session lifecycle logic below.
-        val container = FrameLayout(context).apply {
-            setBackgroundColor(Color.parseColor("#1A1A2E"))
+        val rootContainer = FrameLayout(context).apply {
+            setBackgroundColor(Color.parseColor("#0A0A1A"))
+        }
+        container = rootContainer
+
+        // Attempt to mount RN content
+        val app = context.applicationContext as? ReactApplication
+        if (app != null) {
+            val isBridgeless = ReactNativeNewArchitectureFeatureFlags.enableBridgelessArchitecture()
+            if (isBridgeless) {
+                val reactHost = app.reactHost
+                val reactContext = reactHost.currentReactContext
+                if (reactContext != null) {
+                    // Already initialized
+                    mountBridgeless(reactHost)
+                } else {
+                    // Show fallback and listen for initialization
+                    showPlaceholder("Tulip overlay initializing...")
+                    val listener = object : ReactInstanceEventListener {
+                        override fun onReactContextInitialized(context: ReactContext) {
+                            mountBridgeless(reactHost)
+                            reactHost.removeReactInstanceEventListener(this)
+                            if (eventListener == this) {
+                                eventListener = null
+                            }
+                        }
+                    }
+                    eventListener = listener
+                    reactHost.addReactInstanceEventListener(listener)
+                }
+            } else {
+                val reactNativeHost = app.reactNativeHost
+                val reactInstanceManager = reactNativeHost.reactInstanceManager
+                val reactContext = reactInstanceManager.currentReactContext
+                if (reactContext != null) {
+                    // Already initialized
+                    mountLegacy(reactInstanceManager)
+                } else {
+                    // Show fallback and listen for initialization
+                    showPlaceholder("Tulip overlay initializing...")
+                    val listener = object : ReactInstanceEventListener {
+                        override fun onReactContextInitialized(context: ReactContext) {
+                            mountLegacy(reactInstanceManager)
+                            reactInstanceManager.removeReactInstanceEventListener(this)
+                            if (eventListener == this) {
+                                eventListener = null
+                            }
+                        }
+                    }
+                    eventListener = listener
+                    reactInstanceManager.addReactInstanceEventListener(listener)
+                }
+            }
+        } else {
+            showPlaceholder("Tulip overlay error: ReactApplication not found.")
         }
 
+        return rootContainer
+    }
+
+    private fun showPlaceholder(message: String) {
+        val rootContainer = container ?: return
+        rootContainer.removeAllViews()
+
         val placeholder = TextView(context).apply {
-            text = "Tulip overlay (AO-1 scaffold)\nAvatar mounts here in AO-2/AO-3"
-            setTextColor(Color.WHITE)
+            text = message
+            setTextColor(Color.parseColor("#FFBF00"))
             textSize = 16f
             gravity = Gravity.CENTER
         }
 
-        container.addView(
+        rootContainer.addView(
             placeholder,
             FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.WRAP_CONTENT,
@@ -52,16 +112,82 @@ class TulipVoiceInteractionSession(context: Context) : VoiceInteractionSession(c
                 Gravity.CENTER
             )
         )
+    }
 
-        return container
+    private fun mountBridgeless(reactHost: ReactHost) {
+        val rootContainer = container ?: return
+        rootContainer.removeAllViews()
+
+        try {
+            val surface = reactHost.createSurface(context, "TulipOverlay", null)
+            reactSurface = surface
+            val surfaceView = surface.view
+            if (surfaceView != null) {
+                rootContainer.addView(
+                    surfaceView,
+                    FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT
+                    )
+                )
+                surface.start()
+            } else {
+                showPlaceholder("Tulip overlay: Surface view is null.")
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            showPlaceholder("Tulip overlay load error: ${e.message}")
+        }
+    }
+
+    private fun mountLegacy(reactInstanceManager: ReactInstanceManager) {
+        val rootContainer = container ?: return
+        rootContainer.removeAllViews()
+
+        try {
+            val rRootView = ReactRootView(context)
+            reactRootView = rRootView
+            rRootView.startReactApplication(
+                reactInstanceManager,
+                "TulipOverlay",
+                null
+            )
+            rootContainer.addView(
+                rRootView,
+                FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            showPlaceholder("Tulip overlay load error: ${e.message}")
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        val app = context.applicationContext as? ReactApplication
+        if (app != null && eventListener != null) {
+            val isBridgeless = ReactNativeNewArchitectureFeatureFlags.enableBridgelessArchitecture()
+            if (isBridgeless) {
+                app.reactHost.removeReactInstanceEventListener(eventListener!!)
+            } else {
+                app.reactNativeHost.reactInstanceManager.removeReactInstanceEventListener(eventListener!!)
+            }
+        }
+        eventListener = null
+
+        reactSurface?.stop()
+        reactSurface = null
+
+        reactRootView?.unmountReactApplication()
+        reactRootView = null
+
+        container = null
     }
 
     override fun onShow(args: Bundle?, showFlags: Int) {
         super.onShow(args, showFlags)
-        // Deliberately no startActivity() here anymore, and no hide()/finish() either —
-        // the whole point of AO-1 is that this window IS the app now, and it stays up
-        // until the user explicitly closes it (manual close / swipe-down), which will be
-        // wired in a later AO step. Leaving it open with no close path yet is expected
-        // for this scaffold — don't add an auto-hide "fix" without checking the roadmap.
     }
 }
