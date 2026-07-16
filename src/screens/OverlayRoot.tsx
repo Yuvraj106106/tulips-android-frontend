@@ -4,6 +4,7 @@ import { COLORS, TYPOGRAPHY } from '../constants/theme';
 import CompanionAvatar from '../components/CompanionAvatar';
 import { loadSettings } from '../services/settings';
 import { CompanionId, DEFAULT_COMPANION } from '../companions/config';
+import OverlayGestureContainer from '../components/OverlayGestureContainer';
 
 export default function OverlayRoot() {
   const [companionId, setCompanionId] = useState<CompanionId | null>(null);
@@ -21,19 +22,21 @@ export default function OverlayRoot() {
   }, []);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.glassCard}>
-        {companionId ? (
-          <View style={styles.avatarContainer}>
-            <CompanionAvatar companionId={companionId} />
-          </View>
-        ) : (
-          <ActivityIndicator size="large" color={COLORS.primary} />
-        )}
-        <Text style={styles.title}>Krishna AI</Text>
-        <Text style={styles.subtitle}>RN mounted in overlay</Text>
+    <OverlayGestureContainer>
+      <View style={styles.container}>
+        <View style={styles.glassCard}>
+          {companionId ? (
+            <View style={styles.avatarContainer}>
+              <CompanionAvatar companionId={companionId} />
+            </View>
+          ) : (
+            <ActivityIndicator size="large" color={COLORS.primary} />
+          )}
+          <Text style={styles.title}>Krishna AI</Text>
+          <Text style={styles.subtitle}>RN mounted in overlay</Text>
+        </View>
       </View>
-    </View>
+    </OverlayGestureContainer>
   );
 }
 
