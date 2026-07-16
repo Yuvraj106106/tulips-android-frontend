@@ -227,12 +227,19 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
       console.log(
         `[CompanionAvatar][DEBUG] bbox size: (${size.x.toFixed(4)}, ${size.y.toFixed(4)}, ${size.z.toFixed(4)}) center: (${center.x.toFixed(4)}, ${center.y.toFixed(4)}, ${center.z.toFixed(4)}) isEmpty: ${box.isEmpty()}`
       );
-      model.position.sub(center);
 
       const maxDim = Math.max(size.x, size.y, size.z);
       const targetSize = 2.2;
       const scale = maxDim > 0 ? targetSize / maxDim : 1;
       model.scale.setScalar(scale);
+      // IMPORTANT: an Object3D's own .position is NOT affected by its own
+      // .scale (scale only affects child geometry, not the object's own
+      // translation). So centering must be done in already-scaled space —
+      // otherwise (as with this model, whose center was ~90 units from
+      // origin) the object ends up translated by the full unscaled center
+      // offset while its geometry shrinks, landing far outside the camera's
+      // view. Multiplying by `scale` here keeps the model at the origin.
+      model.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
       scene.add(model);
 
       // Frame the upper portion (head/shoulders) rather than the dead
