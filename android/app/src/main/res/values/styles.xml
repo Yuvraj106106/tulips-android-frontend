@@ -8,4 +8,22 @@
   <style name="Theme.App.SplashScreen" parent="AppTheme">
     <item name="android:windowBackground">@drawable/ic_launcher_background</item>
   </style>
+
+  <!--
+    AO-4: transparent/floating theme for TulipVoiceInteractionSession's window.
+    Without this the session window paints an opaque full-screen background
+    behind whatever content view we return from onCreateContentView(),
+    so the overlay looks full-screen even once the content view itself
+    is sized down to a small popup. This makes the area outside our
+    popup transparent so the rest of the screen shows through.
+    NEEDS ON-DEVICE VERIFICATION (see TULIP_HANDOFF next-session notes).
+  -->
+  <style name="Theme.Tulip.TransparentSession" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <item name="android:windowIsTranslucent">true</item>
+    <item name="android:windowBackground">@android:color/transparent</item>
+    <item name="android:windowNoTitle">true</item>
+    <item name="android:windowContentOverlay">@null</item>
+    <item name="android:backgroundDimEnabled">false</item>
+    <item name="android:windowAnimationStyle">@null</item>
+  </style>
 </resources>

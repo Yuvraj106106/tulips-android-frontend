@@ -31,7 +31,7 @@
         <action android:name="android.service.voice.VoiceInteractionService"/>
       </intent-filter>
     </service>
-    <service android:name=".TulipVoiceInteractionSessionService" android:permission="android.permission.BIND_VOICE_INTERACTION" android:exported="true">
+    <service android:name=".TulipVoiceInteractionSessionService" android:permission="android.permission.BIND_VOICE_INTERACTION" android:exported="true" android:theme="@style/Theme.Tulip.TransparentSession">
       <intent-filter>
         <action android:name="android.service.voice.VoiceInteractionSessionService"/>
       </intent-filter>
