@@ -176,18 +176,11 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
     rim.position.set(0, 2, -2);
     scene.add(rim);
 
-    // TEMP DIAGNOSTIC: a bright red cube placed directly in front of the
-    // camera's default resting spot, added unconditionally regardless of
-    // whether the avatar model loads. If this cube is NOT visible, the
-    // problem is in the GL render pipeline itself (context/surface/present),
-    // not in the avatar model's transform or materials.
-    const debugCube = new THREE.Mesh(
-      new THREE.BoxGeometry(0.5, 0.5, 0.5),
-      new THREE.MeshBasicMaterial({ color: 0xff0000 })
-    );
-    debugCube.position.set(0, 0, 0);
-    scene.add(debugCube);
-    console.log('[CompanionAvatar][DEBUG] added test red cube at origin');
+    // NOTE: the temporary debug red test cube (used earlier to confirm the
+    // GL pipeline itself works, independent of avatar loading/rendering)
+    // has been removed now that the pipeline is confirmed working — it was
+    // masking whether the actual avatar model renders, since it stayed in
+    // the scene permanently at the origin.
 
     camera.position.set(0, 0, 2);
     camera.lookAt(0, 0, 0);
@@ -205,11 +198,6 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
       }
     };
 
-    // Render immediately with just the debug cube, before any (possibly
-    // slow or failing) model loading — proves whether the GL pipeline
-    // presents frames at all, independent of avatar loading.
-    renderOnce();
-    console.log('[CompanionAvatar][DEBUG] renderOnce() called with test cube only');
 
     try {
       // Load/parse via the preloader cache if available to enable instant rendering
