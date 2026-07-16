@@ -232,7 +232,26 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
       let skinnedMeshCount = 0;
       model.traverse((child: any) => {
         if (child.isMesh) meshCount++;
-        if (child.isSkinnedMesh) skinnedMeshCount++;
+        if (child.isSkinnedMesh) {
+          skinnedMeshCount++;
+          // FIX (Bug 3 — avatar invisible despite correct centering/scale):
+          // SkinnedMesh.frustumCulled defaults to true, and Three.js computes
+          // that culling test from the geometry's BIND-POSE bounding sphere
+          // (local, un-skinned vertex data) — it does NOT account for the
+          // actual GPU-side skinning deformation applied via the bone
+          // matrices. This model has scale:[100,100,100] baked into the
+          // RobotArmature/Hand.L/Hand.R bone nodes (Blender/FBX export
+          // artifact), so the real, GPU-skinned on-screen result ends up
+          // far outside the bind-pose bounding sphere used for culling —
+          // Three.js incorrectly decides the mesh is off-frustum and drops
+          // it from rendering entirely, silently. This is exactly why the
+          // debug red cube (a plain non-skinned Mesh, whose bounding sphere
+          // IS accurate) rendered fine while the avatar's skinned meshes
+          // never appeared, even though position/scale math was correct.
+          // Disabling frustum culling for skinned meshes is the standard
+          // fix for this class of bug.
+          child.frustumCulled = false;
+        }
       });
       console.log(
         `[CompanionAvatar][DEBUG] cloned model — meshes: ${meshCount}, skinnedMeshes: ${skinnedMeshCount}, children: ${model.children.length}`
@@ -263,6 +282,19 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
       // view. Multiplying by `scale` here keeps the model at the origin.
       model.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
       scene.add(model);
+
+      // DIAGNOSTIC: recompute the bbox AFTER scale/position are applied and
+      // the model is in the scene graph, to directly confirm (not infer)
+      // whether the model actually sits within camera view post-fix. This
+      // is the "final on-screen bbox" check called out in the handoff as
+      // more conclusive than the pre-transform numbers alone.
+      model.updateMatrixWorld(true);
+      const postBox = new THREE.Box3().setFromObject(model);
+      const postSize = postBox.getSize(new THREE.Vector3());
+      const postCenter = postBox.getCenter(new THREE.Vector3());
+      console.log(
+        `[CompanionAvatar][DEBUG] POST-TRANSFORM bbox size: (${postSize.x.toFixed(4)}, ${postSize.y.toFixed(4)}, ${postSize.z.toFixed(4)}) center: (${postCenter.x.toFixed(4)}, ${postCenter.y.toFixed(4)}, ${postCenter.z.toFixed(4)}) isEmpty: ${postBox.isEmpty()}`
+      );
 
       // Frame the upper portion (head/shoulders) rather than the dead
       // center of the whole body, and pick a camera distance derived from
