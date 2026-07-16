@@ -214,7 +214,17 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
       if (!mounted.current) return;
 
       // Safe deep cloning of skinned meshes and skeletons to avoid interference
-      const model: THREE.Object3D = cloneSkeleton(gltf.scene ?? gltf);
+      // ISOLATION TEST: bbox math (bind-pose) is confirmed correct and
+      // centered on-screen, frustumCulled is disabled, yet the avatar is
+      // still invisible. Suspect: SkeletonUtils.clone() mishandling the
+      // baked scale:[100,100,100] on RobotArmature/Hand.L/Hand.R during
+      // GPU skinning, producing degenerate/off-screen deformed vertices
+      // even though the bind-pose bbox looks fine. Since only one avatar
+      // instance is ever shown at a time in the current flow, we don't
+      // need clone()'s cache-isolation guarantee — testing with the raw
+      // gltf.scene directly (un-cloned) to see if that's the culprit.
+      const model: THREE.Object3D = gltf.scene ?? gltf;
+      // const model: THREE.Object3D = cloneSkeleton(gltf.scene ?? gltf);
 
       let meshCount = 0;
       let skinnedMeshCount = 0;
