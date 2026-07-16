@@ -16,6 +16,8 @@ export interface Settings {
   voiceSpeed?: 'slow' | 'normal' | 'fast';
   notificationsEnabled?: boolean;
   selectedCompanion?: CompanionId;
+  micEnabled?: boolean;
+  handsFreeEnabled?: boolean;
   user?: {
     name: string;
     email: string;
@@ -44,6 +46,8 @@ export async function loadSettings(): Promise<Settings> {
         voiceSpeed: 'normal',
         notificationsEnabled: true,
         selectedCompanion: 'krishna',
+        micEnabled: true,
+        handsFreeEnabled: false,
         ...settings,
       };
     }
@@ -55,5 +59,7 @@ export async function loadSettings(): Promise<Settings> {
     voiceSpeed: 'normal',
     notificationsEnabled: true,
     selectedCompanion: 'krishna',
+    micEnabled: true,
+    handsFreeEnabled: false,
   };
 }
