@@ -11,7 +11,11 @@ import {
 import CompanionAvatar from './CompanionAvatar';
 import { loadSettings } from '../services/settings';
 import { CompanionId, companions, DEFAULT_COMPANION } from '../companions/config';
-import { startWakeWordDetection, stopWakeWordDetection } from '../services/wakeword';
+// Wake-word detection disabled — parked feature (see TULIP_HANDOFF_v39+), and its
+// onnxruntime-react-native dependency crashes the whole app on load in this build
+// (TypeError: Cannot read property 'install' of null — the JSI helper native module
+// resolves to null in this Expo/New-Architecture setup). Re-enable only after that's fixed.
+// import { startWakeWordDetection, stopWakeWordDetection } from '../services/wakeword';
 import { sendWakeEvent } from '../services/api';
 
 /**
@@ -71,49 +75,18 @@ export const FloatingAvatar: React.FC = () => {
 
       if (!active) return;
 
-      // Start always-listening wake-word detection layer
-      await startWakeWordDetection(
-        async () => {
-          if (!active) return;
-          console.log('🔔 Wake Word triggered!');
-
-          // Reload settings in case companion changed
-          await reloadCompanion();
-
-          setIsVisible(true);
-          setIsListening(true);
-
-          // Invoke backend wake-event endpoint
-          try {
-            await sendWakeEvent();
-            console.log('✅ Wake event backend API call succeeded.');
-          } catch (err) {
-            console.error('❌ Backend wake-event API call failed:', err);
-          }
-
-          // Clear any existing dismissal timeout
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-          }
-
-          // Set 8-second auto-timeout to dismiss/deactivate
-          timeoutRef.current = setTimeout(() => {
-            if (active) {
-              handleDismiss();
-            }
-          }, 8000);
-        },
-        (error) => {
-          console.error('Wake-word detection error in FloatingAvatar:', error);
-        }
-      );
+      // Wake-word detection disabled — see import comment above. onnxruntime-react-native
+      // crashes the app on load in this build, so the whole call is stubbed out until
+      // that's fixed. The mic-permission request above is kept harmless/no-op-safe.
+      console.warn('Wake-word detection is currently disabled (onnxruntime crash workaround).');
+      return;
     };
 
     initWakeWord();
 
     return () => {
       active = false;
-      stopWakeWordDetection();
+      // stopWakeWordDetection(); // disabled along with the import above
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }

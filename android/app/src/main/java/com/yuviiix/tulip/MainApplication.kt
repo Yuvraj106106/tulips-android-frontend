@@ -15,7 +15,6 @@ import com.facebook.react.defaults.DefaultReactNativeHost
 
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ReactNativeHostWrapper
-import ai.onnxruntime.reactnative.OnnxruntimePackage
 
 class MainApplication : Application(), ReactApplication {
 
@@ -25,7 +24,6 @@ class MainApplication : Application(), ReactApplication {
         override fun getPackages(): List<ReactPackage> =
             PackageList(this).packages.apply {
               add(FloatingBubblePackage())
-              add(OnnxruntimePackage())
               // Packages that cannot be autolinked yet can be added manually here, for example:
               // add(MyReactNativePackage())
             }
