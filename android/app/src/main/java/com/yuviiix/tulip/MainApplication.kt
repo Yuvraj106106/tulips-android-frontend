@@ -48,6 +48,20 @@ class MainApplication : Application(), ReactApplication {
     }
     loadReactNative(this)
     ApplicationLifecycleDispatcher.onApplicationCreate(this)
+
+    // Warm up the React Native instance/host asynchronously to ensure it's ready for the overlay
+    try {
+      if (com.facebook.react.internal.featureflags.ReactNativeNewArchitectureFeatureFlags.enableBridgelessArchitecture()) {
+        reactHost.start()
+      } else {
+        val reactInstanceManager = reactNativeHost.reactInstanceManager
+        if (!reactInstanceManager.hasStartedCreatingInitialContext()) {
+          reactInstanceManager.createReactContextInBackground()
+        }
+      }
+    } catch (e: Exception) {
+      e.printStackTrace()
+    }
   }
 
   override fun onConfigurationChanged(newConfig: Configuration) {
