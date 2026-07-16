@@ -1,12 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { COLORS, TYPOGRAPHY } from '../constants/theme';
 import CompanionAvatar from '../components/CompanionAvatar';
 import { loadSettings } from '../services/settings';
 import { CompanionId, DEFAULT_COMPANION } from '../companions/config';
+import { useAssistantSessionLifecycle } from '../hooks/useAssistantSessionLifecycle';
+import { OverlayVoiceActionBanner } from '../components/OverlayVoiceActionBanner';
 
 export default function OverlayRoot() {
   const [companionId, setCompanionId] = useState<CompanionId | null>(null);
+  const {
+    isSessionActive,
+    isBannerVisible,
+    triggerVoiceCommand,
+    dismissBanner,
+    closeSession,
+  } = useAssistantSessionLifecycle();
 
   useEffect(() => {
     let active = true;
@@ -20,6 +29,10 @@ export default function OverlayRoot() {
     };
   }, []);
 
+  if (!isSessionActive) {
+    return null;
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.glassCard}>
@@ -32,12 +45,41 @@ export default function OverlayRoot() {
         )}
         <Text style={styles.title}>Krishna AI</Text>
         <Text style={styles.subtitle}>RN mounted in overlay</Text>
+
+        {!isBannerVisible && (
+          <TouchableOpacity style={styles.simulateButton} onPress={triggerVoiceCommand}>
+            <Text style={styles.simulateButtonText}>Simulate Voice Action</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* AO-6: voice action banner - start/end */}
+        {isBannerVisible && (
+          <OverlayVoiceActionBanner
+            onConfirm={dismissBanner}
+            onDismiss={dismissBanner}
+            onCloseSession={closeSession}
+          />
+        )}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  simulateButton: {
+    marginTop: 16,
+    backgroundColor: 'rgba(255, 191, 0, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 191, 0, 0.4)',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  simulateButtonText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.primary,
+    fontWeight: 'bold',
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
