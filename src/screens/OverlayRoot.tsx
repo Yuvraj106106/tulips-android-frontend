@@ -4,6 +4,7 @@ import { COLORS, TYPOGRAPHY } from '../constants/theme';
 import CompanionAvatar from '../components/CompanionAvatar';
 import { loadSettings } from '../services/settings';
 import { CompanionId, DEFAULT_COMPANION } from '../companions/config';
+import OverlayFeatureBubble from '../components/OverlayFeatureBubble';
 
 export default function OverlayRoot() {
   const [companionId, setCompanionId] = useState<CompanionId | null>(null);
@@ -32,6 +33,9 @@ export default function OverlayRoot() {
         )}
         <Text style={styles.title}>Krishna AI</Text>
         <Text style={styles.subtitle}>RN mounted in overlay</Text>
+        {/* AO-4: feature bubble - start */}
+        <OverlayFeatureBubble />
+        {/* AO-4: feature bubble - end */}
       </View>
     </View>
   );
