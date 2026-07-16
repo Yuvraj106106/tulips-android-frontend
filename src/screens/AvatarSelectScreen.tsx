@@ -16,6 +16,7 @@ import { Asset } from 'expo-asset';
 import { companions, CompanionId, CompanionConfig } from '../companions/config';
 import { COLORS, SPACING, TYPOGRAPHY } from '../constants/theme';
 import { saveSettings } from '../services/settings';
+import { preloadAvatar } from '../services/avatarPreloader';
 
 const { width } = Dimensions.get('window');
 const ITEM_WIDTH = width * 0.75;
@@ -59,9 +60,9 @@ const AvatarSelectScreen: React.FC<Props> = ({ navigation, route }) => {
     // (a) save the selected companion ID
     await saveSettings({ selectedCompanion: selected.id });
 
-    // (c) kick off the actual companion GLB download in the background
-    Asset.fromModule(selected.modelAsset).downloadAsync().catch(err => {
-      console.error(`Background GLB download failed for ${selected.id}:`, err);
+    // (c) kick off the actual companion GLB download and parsing in the background
+    preloadAvatar(selected.id).catch(err => {
+      console.error(`Background GLB preloading failed for ${selected.id}:`, err);
     });
 
     // (b) onboarding flow plays the full cinematic intro; mid-app switching

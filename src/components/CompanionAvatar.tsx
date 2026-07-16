@@ -6,6 +6,9 @@ import * as THREE from 'three';
 import { Asset } from 'expo-asset';
 import { GLTFLoader } from '../vendor/GLTFLoaderRN';
 import { companions, CompanionId, DEFAULT_COMPANION } from '../companions/config';
+// @ts-ignore
+import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils';
+import { preloadAvatar, getPreloadedAvatar } from '../services/avatarPreloader';
 
 interface CompanionAvatarProps {
   companionId?: CompanionId;
@@ -187,27 +190,21 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
     };
 
     try {
-      // Loaded via the vendored GLTFLoaderRN (src/vendor/GLTFLoaderRN.js)
-      // instead of expo-three's loadAsync — that helper's internal loader
-      // still can't decode embedded GLB textures under React Native. The
-      // vendored loader routes embedded image bufferViews through
-      // expo-file-system + a custom RNTextureLoader (see PR #5) so
-      // embedded textures load without depending on browser-only Blob/URL
-      // APIs. Geometry parsing is unaffected either way since it's raw
-      // binary, no image decoding involved.
-      const asset = Asset.fromModule(config.modelAsset);
-      await asset.downloadAsync();
-      const uri = asset.localUri!;
-      const response = await fetch(uri);
-      const buffer = await response.arrayBuffer();
-
-      const gltf: any = await new Promise((resolve, reject) => {
-        const loader = new GLTFLoader();
-        loader.parse(buffer, '', resolve, reject);
-      });
+      // Load/parse via the preloader cache if available to enable instant rendering
+      let gltf: any;
+      const preloaded = getPreloadedAvatar(companionId);
+      if (preloaded) {
+        gltf = preloaded.gltf;
+        console.log(`[CompanionAvatar] Using preloaded GLB for ${companionId}`);
+      } else {
+        console.log(`[CompanionAvatar] Preloaded GLB not found, fetching/parsing now for ${companionId}...`);
+        const pre = await preloadAvatar(companionId);
+        gltf = pre.gltf;
+      }
       if (!mounted.current) return;
 
-      const model: THREE.Object3D = gltf.scene ?? gltf;
+      // Safe deep cloning of skinned meshes and skeletons to avoid interference
+      const model: THREE.Object3D = cloneSkeleton(gltf.scene ?? gltf);
 
       const texturedSomething = await applyMaterials(model);
 
