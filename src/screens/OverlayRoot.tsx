@@ -7,6 +7,7 @@ import { CompanionId, DEFAULT_COMPANION } from '../companions/config';
 import OverlayFeatureBubble from '../components/OverlayFeatureBubble';
 import { useAssistantSessionLifecycle } from '../hooks/useAssistantSessionLifecycle';
 import { OverlayVoiceActionBanner } from '../components/OverlayVoiceActionBanner';
+import OverlayGestureContainer from '../components/OverlayGestureContainer';
 
 export default function OverlayRoot() {
   const [companionId, setCompanionId] = useState<CompanionId | null>(null);
@@ -35,37 +36,39 @@ export default function OverlayRoot() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.glassCard}>
-        {companionId ? (
-          <View style={styles.avatarContainer}>
-            <CompanionAvatar companionId={companionId} />
-          </View>
-        ) : (
-          <ActivityIndicator size="large" color={COLORS.primary} />
-        )}
-        <Text style={styles.title}>Krishna AI</Text>
-        <Text style={styles.subtitle}>RN mounted in overlay</Text>
-        {/* AO-4: feature bubble - start */}
-        <OverlayFeatureBubble />
-        {/* AO-4: feature bubble - end */}
+    <OverlayGestureContainer>
+      <View style={styles.container}>
+        <View style={styles.glassCard}>
+          {companionId ? (
+            <View style={styles.avatarContainer}>
+              <CompanionAvatar companionId={companionId} />
+            </View>
+          ) : (
+            <ActivityIndicator size="large" color={COLORS.primary} />
+          )}
+          <Text style={styles.title}>Krishna AI</Text>
+          <Text style={styles.subtitle}>RN mounted in overlay</Text>
+          {/* AO-4: feature bubble - start */}
+          <OverlayFeatureBubble />
+          {/* AO-4: feature bubble - end */}
 
-        {!isBannerVisible && (
-          <TouchableOpacity style={styles.simulateButton} onPress={triggerVoiceCommand}>
-            <Text style={styles.simulateButtonText}>Simulate Voice Action</Text>
-          </TouchableOpacity>
-        )}
+          {!isBannerVisible && (
+            <TouchableOpacity style={styles.simulateButton} onPress={triggerVoiceCommand}>
+              <Text style={styles.simulateButtonText}>Simulate Voice Action</Text>
+            </TouchableOpacity>
+          )}
 
-        {/* AO-6: voice action banner - start/end */}
-        {isBannerVisible && (
-          <OverlayVoiceActionBanner
-            onConfirm={dismissBanner}
-            onDismiss={dismissBanner}
-            onCloseSession={closeSession}
-          />
-        )}
+          {/* AO-6: voice action banner - start/end */}
+          {isBannerVisible && (
+            <OverlayVoiceActionBanner
+              onConfirm={dismissBanner}
+              onDismiss={dismissBanner}
+              onCloseSession={closeSession}
+            />
+          )}
+        </View>
       </View>
-    </View>
+    </OverlayGestureContainer>
   );
 }
 
