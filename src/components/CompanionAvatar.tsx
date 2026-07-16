@@ -206,6 +206,16 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
       // Safe deep cloning of skinned meshes and skeletons to avoid interference
       const model: THREE.Object3D = cloneSkeleton(gltf.scene ?? gltf);
 
+      let meshCount = 0;
+      let skinnedMeshCount = 0;
+      model.traverse((child: any) => {
+        if (child.isMesh) meshCount++;
+        if (child.isSkinnedMesh) skinnedMeshCount++;
+      });
+      console.log(
+        `[CompanionAvatar][DEBUG] cloned model — meshes: ${meshCount}, skinnedMeshes: ${skinnedMeshCount}, children: ${model.children.length}`
+      );
+
       const texturedSomething = await applyMaterials(model);
 
       // Auto-center and scale to fit the view regardless of the model's
@@ -214,6 +224,9 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
       const box = new THREE.Box3().setFromObject(model);
       const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
+      console.log(
+        `[CompanionAvatar][DEBUG] bbox size: (${size.x.toFixed(4)}, ${size.y.toFixed(4)}, ${size.z.toFixed(4)}) center: (${center.x.toFixed(4)}, ${center.y.toFixed(4)}, ${center.z.toFixed(4)}) isEmpty: ${box.isEmpty()}`
+      );
       model.position.sub(center);
 
       const maxDim = Math.max(size.x, size.y, size.z);
@@ -234,6 +247,10 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
 
       camera.position.set(0, lookY, distance);
       camera.lookAt(0, lookY, 0);
+
+      console.log(
+        `[CompanionAvatar][DEBUG] maxDim: ${maxDim.toFixed(4)}, scale: ${scale.toFixed(4)}, scaledHeight: ${scaledHeight.toFixed(4)}, camera.position: (0, ${lookY.toFixed(4)}, ${distance.toFixed(4)}), camera.near: ${camera.near}, camera.far: ${camera.far}`
+      );
 
       console.log(
         `✅ ${config.name} model loaded (companion: ${config.id}, textured: ${texturedSomething})`
@@ -263,3 +280,4 @@ const styles = StyleSheet.create({
 });
 
 export default CompanionAvatar;
+
