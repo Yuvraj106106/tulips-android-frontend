@@ -44,24 +44,28 @@ class TulipVoiceInteractionSession(context: Context) : VoiceInteractionSession(c
             val isBridgeless = ReactNativeNewArchitectureFeatureFlags.enableBridgelessArchitecture()
             if (isBridgeless) {
                 val reactHost = app.reactHost
-                val reactContext = reactHost.currentReactContext
-                if (reactContext != null) {
-                    // Already initialized
-                    mountBridgeless(reactHost)
+                if (reactHost == null) {
+                    showPlaceholder("Tulip overlay error: ReactHost not available.")
                 } else {
-                    // Show fallback and listen for initialization
-                    showPlaceholder("Tulip overlay initializing...")
-                    val listener = object : ReactInstanceEventListener {
-                        override fun onReactContextInitialized(context: ReactContext) {
-                            mountBridgeless(reactHost)
-                            reactHost.removeReactInstanceEventListener(this)
-                            if (eventListener == this) {
-                                eventListener = null
+                    val reactContext = reactHost.currentReactContext
+                    if (reactContext != null) {
+                        // Already initialized
+                        mountBridgeless(reactHost)
+                    } else {
+                        // Show fallback and listen for initialization
+                        showPlaceholder("Tulip overlay initializing...")
+                        val listener = object : ReactInstanceEventListener {
+                            override fun onReactContextInitialized(context: ReactContext) {
+                                mountBridgeless(reactHost)
+                                reactHost.removeReactInstanceEventListener(this)
+                                if (eventListener == this) {
+                                    eventListener = null
+                                }
                             }
                         }
+                        eventListener = listener
+                        reactHost.addReactInstanceEventListener(listener)
                     }
-                    eventListener = listener
-                    reactHost.addReactInstanceEventListener(listener)
                 }
             } else {
                 val reactNativeHost = app.reactNativeHost
@@ -171,7 +175,7 @@ class TulipVoiceInteractionSession(context: Context) : VoiceInteractionSession(c
         if (app != null && eventListener != null) {
             val isBridgeless = ReactNativeNewArchitectureFeatureFlags.enableBridgelessArchitecture()
             if (isBridgeless) {
-                app.reactHost.removeReactInstanceEventListener(eventListener!!)
+                app.reactHost?.removeReactInstanceEventListener(eventListener!!)
             } else {
                 app.reactNativeHost.reactInstanceManager.removeReactInstanceEventListener(eventListener!!)
             }
@@ -191,3 +195,4 @@ class TulipVoiceInteractionSession(context: Context) : VoiceInteractionSession(c
         super.onShow(args, showFlags)
     }
 }
+
