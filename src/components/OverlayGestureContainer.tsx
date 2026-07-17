@@ -114,12 +114,12 @@ export default function OverlayGestureContainer({ children }: OverlayGestureCont
   // Animate the layout dimensions of the card wrapper
   const animatedWidth = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [150, layout.width],
+    outputRange: [260, layout.width],
   });
 
   const animatedHeight = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [190, layout.height],
+    outputRange: [340, layout.height],
   });
 
   const closeButtonOpacity = animatedValue.interpolate({

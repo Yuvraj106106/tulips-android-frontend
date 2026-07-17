@@ -99,8 +99,8 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   avatarContainer: {
-    width: 130,
-    height: 170,
+    width: 220,
+    height: 260,
     marginBottom: 8,
     overflow: 'hidden',
   },

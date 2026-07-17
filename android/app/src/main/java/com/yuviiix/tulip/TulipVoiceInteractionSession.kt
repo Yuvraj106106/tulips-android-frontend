@@ -53,8 +53,8 @@ class TulipVoiceInteractionSession(context: Context) : VoiceInteractionSession(c
     // OverlayGestureContainer drives size from state/animated values, not literal
     // screen dimensions - this is just the initial resting (collapsed) size before
     // any swipe-up expansion happens on the RN side.
-    private val popupWidthDp = 170
-    private val popupHeightDp = 230
+    private val popupWidthDp = 260
+    private val popupHeightDp = 340
     private val popupMarginDp = 8
 
     private fun dpToPx(dp: Int): Int {
