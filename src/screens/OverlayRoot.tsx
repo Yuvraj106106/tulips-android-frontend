@@ -39,13 +39,6 @@ export default function OverlayRoot() {
     <OverlayGestureContainer>
       <View style={styles.container}>
         <View style={styles.contentColumn}>
-          {companionId ? (
-            <View style={styles.avatarContainer}>
-              <CompanionAvatar companionId={companionId} />
-            </View>
-          ) : (
-            <ActivityIndicator size="large" color={COLORS.primary} />
-          )}
           {/* AO-4: feature bubble - start */}
           <OverlayFeatureBubble />
           {/* AO-4: feature bubble - end */}
@@ -63,6 +56,16 @@ export default function OverlayRoot() {
               onDismiss={dismissBanner}
               onCloseSession={closeSession}
             />
+          )}
+
+          {/* Avatar rendered last so it's the bottom-most element, flush against the
+              popup's bottom edge, instead of sitting above the toggle/button. */}
+          {companionId ? (
+            <View style={styles.avatarContainer}>
+              <CompanionAvatar companionId={companionId} />
+            </View>
+          ) : (
+            <ActivityIndicator size="large" color={COLORS.primary} />
           )}
         </View>
       </View>
@@ -96,12 +99,10 @@ const styles = StyleSheet.create({
   // design (character floating on the transparent screen, no card).
   contentColumn: {
     alignItems: 'center',
-    paddingBottom: 12,
   },
   avatarContainer: {
     width: 220,
     height: 260,
-    marginBottom: 8,
     overflow: 'hidden',
   },
 });
