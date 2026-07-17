@@ -114,22 +114,12 @@ export default function OverlayGestureContainer({ children }: OverlayGestureCont
   // Animate the layout dimensions of the card wrapper
   const animatedWidth = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [320, layout.width],
+    outputRange: [150, layout.width],
   });
 
   const animatedHeight = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [480, layout.height],
-  });
-
-  const animatedBorderRadius = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [24, 0],
-  });
-
-  const animatedBackgroundColor = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['rgba(10, 10, 26, 0.4)', 'rgba(10, 10, 26, 1)'],
+    outputRange: [190, layout.height],
   });
 
   const closeButtonOpacity = animatedValue.interpolate({
@@ -146,8 +136,6 @@ export default function OverlayGestureContainer({ children }: OverlayGestureCont
           {
             width: animatedWidth,
             height: animatedHeight,
-            borderRadius: animatedBorderRadius,
-            backgroundColor: animatedBackgroundColor,
           },
         ]}
       >
@@ -177,14 +165,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   animatedWrapper: {
-    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 3,
+    backgroundColor: 'transparent',
   },
   closeButtonContainer: {
     position: 'absolute',

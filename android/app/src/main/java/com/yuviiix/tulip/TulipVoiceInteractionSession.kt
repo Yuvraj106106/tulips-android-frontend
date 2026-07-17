@@ -46,13 +46,15 @@ class TulipVoiceInteractionSession(context: Context) : VoiceInteractionSession(c
     private var eventListener: ReactInstanceEventListener? = null
 
     // AO-4: popup size in dp. Bottom-right docked area for the avatar - NOT a card,
-    // just a sizing/positioning bounds. Enlarged (was 320x420) to fit the bigger
-    // avatar per reference design. NOTE: matches AO-5's expectation that
+    // just a sizing/positioning bounds. Shrunk from 360x560 (read as basically
+    // full-screen at real device density) to a small floating-avatar footprint per
+    // the user's reference screenshot (avatar floats directly among home-screen
+    // icons, no card, small relative to screen). NOTE: matches AO-5's expectation that
     // OverlayGestureContainer drives size from state/animated values, not literal
     // screen dimensions - this is just the initial resting (collapsed) size before
     // any swipe-up expansion happens on the RN side.
-    private val popupWidthDp = 360
-    private val popupHeightDp = 560
+    private val popupWidthDp = 170
+    private val popupHeightDp = 230
     private val popupMarginDp = 8
 
     private fun dpToPx(dp: Int): Int {
