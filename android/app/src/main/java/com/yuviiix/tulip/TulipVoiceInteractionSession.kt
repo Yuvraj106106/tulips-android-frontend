@@ -45,13 +45,15 @@ class TulipVoiceInteractionSession(context: Context) : VoiceInteractionSession(c
     private var reactSurface: ReactSurface? = null
     private var eventListener: ReactInstanceEventListener? = null
 
-    // AO-4: popup size in dp. Bottom-right docked "bubble" instead of full-screen.
-    // NOTE: matches AO-5's expectation that OverlayGestureContainer drives size from
-    // state/animated values, not literal screen dimensions - this is just the initial
-    // resting (collapsed) size before any swipe-up expansion happens on the RN side.
-    private val popupWidthDp = 320
-    private val popupHeightDp = 420
-    private val popupMarginDp = 16
+    // AO-4: popup size in dp. Bottom-right docked area for the avatar - NOT a card,
+    // just a sizing/positioning bounds. Enlarged (was 320x420) to fit the bigger
+    // avatar per reference design. NOTE: matches AO-5's expectation that
+    // OverlayGestureContainer drives size from state/animated values, not literal
+    // screen dimensions - this is just the initial resting (collapsed) size before
+    // any swipe-up expansion happens on the RN side.
+    private val popupWidthDp = 360
+    private val popupHeightDp = 560
+    private val popupMarginDp = 8
 
     private fun dpToPx(dp: Int): Int {
         val density = context.resources.displayMetrics.density
@@ -66,15 +68,11 @@ class TulipVoiceInteractionSession(context: Context) : VoiceInteractionSession(c
         }
         container = rootContainer
 
-        // The actual popup surface: fixed size, docked bottom-right, rounded dark-glass
-        // background so it reads as a floating bubble rather than a full-screen sheet.
-        val popupContainer = FrameLayout(context).apply {
-            background = android.graphics.drawable.GradientDrawable().apply {
-                setColor(Color.parseColor("#E60A0A1A")) // dark glass, ~90% opaque
-                cornerRadius = dpToPx(16).toFloat()
-            }
-            clipToOutline = true
-        }
+        // AO-4 correction: this is deliberately NOT a card. No background/corner-radius
+        // drawable here anymore - it's a transparent sizing/positioning bounds only, so
+        // the avatar renders directly onto the transparent screen (per reference image),
+        // not inside a dark-glass box.
+        val popupContainer = FrameLayout(context)
         popupHost = popupContainer
 
         val margin = dpToPx(popupMarginDp)

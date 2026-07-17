@@ -38,7 +38,7 @@ export default function OverlayRoot() {
   return (
     <OverlayGestureContainer>
       <View style={styles.container}>
-        <View style={styles.glassCard}>
+        <View style={styles.contentColumn}>
           {companionId ? (
             <View style={styles.avatarContainer}>
               <CompanionAvatar companionId={companionId} />
@@ -46,8 +46,6 @@ export default function OverlayRoot() {
           ) : (
             <ActivityIndicator size="large" color={COLORS.primary} />
           )}
-          <Text style={styles.title}>Krishna AI</Text>
-          <Text style={styles.subtitle}>RN mounted in overlay</Text>
           {/* AO-4: feature bubble - start */}
           <OverlayFeatureBubble />
           {/* AO-4: feature bubble - end */}
@@ -89,40 +87,20 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    justifyContent: 'flex-end',
     alignItems: 'center',
+  },
+  // AO-4 update: replaces the old opaque "glassCard" - no box/background behind the
+  // avatar anymore, it renders straight onto the transparent popup per the reference
+  // design (character floating on the transparent screen, no card).
+  contentColumn: {
+    alignItems: 'center',
+    paddingBottom: 12,
   },
   avatarContainer: {
-    width: 240,
-    height: 320,
-    marginBottom: 16,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-  },
-  glassCard: {
-    backgroundColor: 'rgba(26, 26, 46, 0.85)',
-    borderRadius: 16,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 191, 0, 0.3)',
-    alignItems: 'center',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  title: {
-    ...TYPOGRAPHY.h2,
-    color: COLORS.primary,
+    width: 300,
+    height: 400,
     marginBottom: 8,
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.text,
-    textAlign: 'center',
   },
 });

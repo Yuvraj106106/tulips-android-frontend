@@ -74,6 +74,7 @@ const BUTTON_CONFIGS: ButtonConfig[] = [
 ];
 
 export default function OverlayFeatureBubble() {
+  const [expanded, setExpanded] = useState(false);
   const [micEnabled, setMicEnabled] = useState(true);
   const [handsFreeEnabled, setHandsFreeEnabled] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -164,23 +165,44 @@ export default function OverlayFeatureBubble() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      {/* Horizontal row of icons built from mapped config array */}
-      <View style={styles.buttonRow}>
-        {BUTTON_CONFIGS.map((btn) => {
-          const isActive = btn.getIsActive(currentState);
-          return (
-            <TouchableOpacity
-              key={btn.id}
-              style={[styles.button, isActive && styles.buttonActive]}
-              onPress={() => btn.onPress(helpers)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.buttonIcon}>{btn.getIcon(currentState)}</Text>
-              <Text style={styles.buttonLabel}>{btn.getLabel(currentState)}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      {/* AO-4 update: '+' expand/collapse toggle instead of an always-open icon row,
+          per the hand-drawn spec - tap '+' to reveal the row, tap it again (now shown
+          as '×') to collapse it back. */}
+      {!expanded ? (
+        <TouchableOpacity
+          style={styles.expandToggle}
+          onPress={() => setExpanded(true)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.expandToggleIcon}>+</Text>
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.expandedRow}>
+          <View style={styles.buttonRow}>
+            {BUTTON_CONFIGS.map((btn) => {
+              const isActive = btn.getIsActive(currentState);
+              return (
+                <TouchableOpacity
+                  key={btn.id}
+                  style={[styles.button, isActive && styles.buttonActive]}
+                  onPress={() => btn.onPress(helpers)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.buttonIcon}>{btn.getIcon(currentState)}</Text>
+                  <Text style={styles.buttonLabel}>{btn.getLabel(currentState)}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <TouchableOpacity
+            style={styles.collapseToggle}
+            onPress={() => setExpanded(false)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.expandToggleIcon}>×</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Lightweight Chat Pane */}
       {chatOpen && (
@@ -227,15 +249,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: SPACING.md,
   },
+  expandToggle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 191, 0, 0.85)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  collapseToggle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 191, 0, 0.85)',
+    marginLeft: SPACING.xs,
+  },
+  expandToggleIcon: {
+    fontSize: 20,
+    color: '#0a0a1a',
+    fontWeight: 'bold',
+    lineHeight: 22,
+  },
+  expandedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    width: '100%',
-    paddingVertical: SPACING.sm,
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    backgroundColor: 'rgba(10, 10, 26, 0.55)',
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255, 191, 0, 0.15)',
+    borderColor: 'rgba(255, 191, 0, 0.25)',
   },
   button: {
     alignItems: 'center',
