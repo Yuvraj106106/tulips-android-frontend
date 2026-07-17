@@ -8,10 +8,15 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import { COLORS, SPACING, TYPOGRAPHY } from '../constants/theme';
 import { loadSettings, saveSettings } from '../services/settings';
 import MessageBubble from './MessageBubble';
+
+const BUBBLE_SIZE = 44;
+const TAP_MOVE_THRESHOLD = 6; // px of movement below which a gesture counts as a tap, not a drag
 
 interface Message {
   id: string;
@@ -90,6 +95,48 @@ export default function OverlayFeatureBubble() {
 
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // Floating-bubble drag state: pan tracks the bubble's top-left position within
+  // its parent (the full popup area). Starts near the bottom-left, matching the
+  // reference design's toggle placement.
+  const [bounds, setBounds] = useState({ width: 260, height: 340 });
+  const pan = useRef(new Animated.ValueXY({ x: 12, y: 340 - BUBBLE_SIZE - 12 })).current;
+  const dragDistance = useRef(0);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        pan.extractOffset();
+        dragDistance.current = 0;
+      },
+      onPanResponderMove: (evt, gesture) => {
+        dragDistance.current = Math.abs(gesture.dx) + Math.abs(gesture.dy);
+        Animated.event([null, { dx: pan.x, dy: pan.y }], { useNativeDriver: false })(evt, gesture);
+      },
+      onPanResponderRelease: () => {
+        pan.flattenOffset();
+        // Clamp the resting position to stay fully within the popup bounds.
+        const anyPan = pan as any;
+        const currentX = anyPan.x._value;
+        const currentY = anyPan.y._value;
+        const clampedX = Math.max(0, Math.min(bounds.width - BUBBLE_SIZE, currentX));
+        const clampedY = Math.max(0, Math.min(bounds.height - BUBBLE_SIZE, currentY));
+        if (clampedX !== currentX || clampedY !== currentY) {
+          Animated.spring(pan, {
+            toValue: { x: clampedX, y: clampedY },
+            useNativeDriver: false,
+          }).start();
+        }
+
+        // Barely moved -> treat as a tap, toggle the expand/collapse row.
+        if (dragDistance.current < TAP_MOVE_THRESHOLD) {
+          setExpanded((prev) => !prev);
+        }
+      },
+    })
+  ).current;
+
   // Load persistent settings on mount
   useEffect(() => {
     loadSettings().then((settings) => {
@@ -161,93 +208,112 @@ export default function OverlayFeatureBubble() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+    <View
+      style={styles.floatingLayer}
+      pointerEvents="box-none"
+      onLayout={(e) => {
+        const { width, height } = e.nativeEvent.layout;
+        if (width > 0 && height > 0) {
+          setBounds({ width, height });
+        }
+      }}
     >
-      {/* AO-4 update: '+' expand/collapse toggle instead of an always-open icon row,
-          per the hand-drawn spec - tap '+' to reveal the row, tap it again (now shown
-          as '×') to collapse it back. */}
-      {!expanded ? (
-        <TouchableOpacity
-          style={styles.expandToggle}
-          onPress={() => setExpanded(true)}
-          activeOpacity={0.7}
+      <Animated.View
+        style={[styles.bubbleAnchor, { transform: pan.getTranslateTransform() }]}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <Text style={styles.expandToggleIcon}>+</Text>
-        </TouchableOpacity>
-      ) : (
-        <View style={styles.expandedRow}>
-          <View style={styles.buttonRow}>
-            {BUTTON_CONFIGS.map((btn) => {
-              const isActive = btn.getIsActive(currentState);
-              return (
-                <TouchableOpacity
-                  key={btn.id}
-                  style={[styles.button, isActive && styles.buttonActive]}
-                  onPress={() => btn.onPress(helpers)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.buttonIcon}>{btn.getIcon(currentState)}</Text>
-                  <Text style={styles.buttonLabel}>{btn.getLabel(currentState)}</Text>
+          {/* AO-4 update: '+' is now a draggable floating bubble (chat-head style) -
+              tap it (no significant movement) to expand/collapse the icon row, or
+              drag it anywhere within the popup to reposition it. Only the collapsed
+              bubble itself is draggable; the expanded row is a static tappable panel
+              anchored at wherever the bubble currently sits. */}
+          {!expanded ? (
+            <View style={styles.expandToggle} {...panResponder.panHandlers}>
+              <Text style={styles.expandToggleIcon}>+</Text>
+            </View>
+          ) : (
+            <View style={styles.expandedRow}>
+              <View style={styles.buttonRow}>
+                {BUTTON_CONFIGS.map((btn) => {
+                  const isActive = btn.getIsActive(currentState);
+                  return (
+                    <TouchableOpacity
+                      key={btn.id}
+                      style={[styles.button, isActive && styles.buttonActive]}
+                      onPress={() => btn.onPress(helpers)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.buttonIcon}>{btn.getIcon(currentState)}</Text>
+                      <Text style={styles.buttonLabel}>{btn.getLabel(currentState)}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <TouchableOpacity
+                style={styles.collapseToggle}
+                onPress={() => setExpanded(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.expandToggleIcon}>×</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Lightweight Chat Pane */}
+          {chatOpen && (
+            <View style={styles.chatPane}>
+              <ScrollView
+                style={styles.messageScroll}
+                contentContainerStyle={styles.messageScrollContent}
+                ref={scrollViewRef}
+                onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+              >
+                {messages.map((msg) => (
+                  <MessageBubble
+                    key={msg.id}
+                    text={msg.text}
+                    sender={msg.sender}
+                    timestamp={msg.timestamp}
+                  />
+                ))}
+              </ScrollView>
+
+              {/* Lightweight Input Bar matching the design language */}
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={styles.input}
+                  value={inputText}
+                  onChangeText={setInputText}
+                  placeholder="Type a message..."
+                  placeholderTextColor={COLORS.textSecondary}
+                  multiline
+                />
+                <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
+                  <Text style={styles.sendButtonText}>Send</Text>
                 </TouchableOpacity>
-              );
-            })}
-          </View>
-          <TouchableOpacity
-            style={styles.collapseToggle}
-            onPress={() => setExpanded(false)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.expandToggleIcon}>×</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Lightweight Chat Pane */}
-      {chatOpen && (
-        <View style={styles.chatPane}>
-          <ScrollView
-            style={styles.messageScroll}
-            contentContainerStyle={styles.messageScrollContent}
-            ref={scrollViewRef}
-            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-          >
-            {messages.map((msg) => (
-              <MessageBubble
-                key={msg.id}
-                text={msg.text}
-                sender={msg.sender}
-                timestamp={msg.timestamp}
-              />
-            ))}
-          </ScrollView>
-
-          {/* Lightweight Input Bar matching the design language */}
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              value={inputText}
-              onChangeText={setInputText}
-              placeholder="Type a message..."
-              placeholderTextColor={COLORS.textSecondary}
-              multiline
-            />
-            <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
-              <Text style={styles.sendButtonText}>Send</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-    </KeyboardAvoidingView>
+              </View>
+            </View>
+          )}
+        </KeyboardAvoidingView>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    alignItems: 'center',
-    marginTop: SPACING.md,
+  floatingLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  bubbleAnchor: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
   },
   expandToggle: {
     width: 44,
@@ -314,7 +380,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   chatPane: {
-    width: '100%',
+    width: 240,
     maxHeight: 250,
     marginTop: SPACING.md,
     backgroundColor: 'rgba(26, 26, 46, 0.6)',

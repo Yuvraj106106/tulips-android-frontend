@@ -39,10 +39,6 @@ export default function OverlayRoot() {
     <OverlayGestureContainer>
       <View style={styles.container}>
         <View style={styles.contentColumn}>
-          {/* AO-4: feature bubble - start */}
-          <OverlayFeatureBubble />
-          {/* AO-4: feature bubble - end */}
-
           {!isBannerVisible && (
             <TouchableOpacity style={styles.simulateButton} onPress={triggerVoiceCommand}>
               <Text style={styles.simulateButtonText}>Simulate Voice Action</Text>
@@ -68,6 +64,12 @@ export default function OverlayRoot() {
             <ActivityIndicator size="large" color={COLORS.primary} />
           )}
         </View>
+
+        {/* AO-4: feature bubble - now a draggable floating bubble spanning the whole
+            popup area (not confined to the bottom content strip), so it can be
+            dragged anywhere within the popup. Automatically mounts/unmounts with
+            this whole screen - tied to isSessionActive above, not a separate toggle. */}
+        <OverlayFeatureBubble />
       </View>
     </OverlayGestureContainer>
   );
