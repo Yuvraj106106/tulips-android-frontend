@@ -102,5 +102,6 @@ const styles = StyleSheet.create({
     width: 300,
     height: 400,
     marginBottom: 8,
+    overflow: 'hidden',
   },
 });

@@ -147,12 +147,19 @@ const CompanionAvatar: React.FC<CompanionAvatarProps> = ({ companionId = DEFAULT
 
     glRef.current = gl;
 
-    const renderer = new Renderer({ gl });
+    // AO-4: alpha:true + clearColor alpha 0 so the GL surface itself is
+    // transparent, instead of the old opaque scene.background fill. The
+    // opaque fill made sense when the avatar sat inside a dark card (its
+    // color matched the card), but now the avatar renders directly onto
+    // the transparent popup, so an opaque scene background just shows up
+    // as a solid box.
+    const renderer = new Renderer({ gl, alpha: true });
     renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
+    renderer.setClearColor(0x000000, 0);
     rendererRef.current = renderer;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(config.backgroundColor);
+    // scene.background intentionally left null (transparent) - see note above.
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(
