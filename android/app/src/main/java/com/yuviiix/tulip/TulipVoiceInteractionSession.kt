@@ -45,21 +45,31 @@ class TulipVoiceInteractionSession(context: Context) : VoiceInteractionSession(c
     private var reactSurface: ReactSurface? = null
     private var eventListener: ReactInstanceEventListener? = null
 
-    // AO-4: popup size in dp. Bottom-right docked area for the avatar - NOT a card,
-    // just a sizing/positioning bounds. Shrunk from 360x560 (read as basically
-    // full-screen at real device density) to a small floating-avatar footprint per
-    // the user's reference screenshot (avatar floats directly among home-screen
-    // icons, no card, small relative to screen). NOTE: matches AO-5's expectation that
-    // OverlayGestureContainer drives size from state/animated values, not literal
-    // screen dimensions - this is just the initial resting (collapsed) size before
-    // any swipe-up expansion happens on the RN side.
-    private val popupWidthDp = 260
-    private val popupHeightDp = 340
+    // AO-4 v2 (this session, v49): popup size is now a PERCENTAGE of the real screen
+    // size, not a fixed dp value. The old fixed 260x340dp read correctly on the
+    // dev/test device used earlier, but real on-device testing this session showed it
+    // reading as "too small" on a different phone - a fixed dp size covers a
+    // different fraction of the screen depending on the device's actual screen
+    // size/density, so it doesn't generalize. Sizing off displayMetrics
+    // width/height fixes that: the popup now always reads as ~45% width / ~55%
+    // height of whatever screen it's on.
+    private val popupWidthPercent = 0.45f
+    private val popupHeightPercent = 0.55f
     private val popupMarginDp = 8
 
     private fun dpToPx(dp: Int): Int {
         val density = context.resources.displayMetrics.density
         return (dp * density).toInt()
+    }
+
+    private fun popupWidthPx(): Int {
+        val screenWidth = context.resources.displayMetrics.widthPixels
+        return (screenWidth * popupWidthPercent).toInt()
+    }
+
+    private fun popupHeightPx(): Int {
+        val screenHeight = context.resources.displayMetrics.heightPixels
+        return (screenHeight * popupHeightPercent).toInt()
     }
 
     override fun onCreateContentView(): View {
@@ -81,8 +91,8 @@ class TulipVoiceInteractionSession(context: Context) : VoiceInteractionSession(c
         rootContainer.addView(
             popupContainer,
             FrameLayout.LayoutParams(
-                dpToPx(popupWidthDp),
-                dpToPx(popupHeightDp),
+                popupWidthPx(),
+                popupHeightPx(),
                 Gravity.BOTTOM or Gravity.END
             ).apply {
                 bottomMargin = margin

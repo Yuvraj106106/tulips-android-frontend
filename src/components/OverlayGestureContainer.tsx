@@ -9,12 +9,24 @@ import {
   LayoutChangeEvent,
   GestureResponderEvent,
   PanResponderGestureState,
+  Dimensions,
 } from 'react-native';
 import { COLORS } from '../constants/theme';
 
 interface OverlayGestureContainerProps {
   children: React.ReactNode;
 }
+
+// AO-4 v2 (v49): collapsed popup size is now a PERCENTAGE of the screen, matching
+// TulipVoiceInteractionSession.kt's popupWidthPercent/popupHeightPercent on the
+// native side. A fixed 260x340dp read as "too small" on real-device testing this
+// session because a fixed dp doesn't cover the same fraction of screen on every
+// device. Both sides must stay in sync - if you change one, change the other.
+const POPUP_WIDTH_PERCENT = 0.45;
+const POPUP_HEIGHT_PERCENT = 0.55;
+const screenDimensions = Dimensions.get('window');
+const COLLAPSED_WIDTH = screenDimensions.width * POPUP_WIDTH_PERCENT;
+const COLLAPSED_HEIGHT = screenDimensions.height * POPUP_HEIGHT_PERCENT;
 
 export default function OverlayGestureContainer({ children }: OverlayGestureContainerProps) {
   // layout dimensions of the parent/screen container
@@ -114,12 +126,12 @@ export default function OverlayGestureContainer({ children }: OverlayGestureCont
   // Animate the layout dimensions of the card wrapper
   const animatedWidth = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [260, layout.width],
+    outputRange: [COLLAPSED_WIDTH, layout.width],
   });
 
   const animatedHeight = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [340, layout.height],
+    outputRange: [COLLAPSED_HEIGHT, layout.height],
   });
 
   const closeButtonOpacity = animatedValue.interpolate({

@@ -106,6 +106,11 @@ export default function OverlayFeatureBubble() {
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
+      // Defensive: also claim in the capture phase, so a touch that starts on the
+      // bubble is never handed to OverlayGestureContainer's swipe-up-to-expand
+      // PanResponder (which is attached higher up, on the whole popup) instead.
+      onStartShouldSetPanResponderCapture: () => true,
+      onMoveShouldSetPanResponderCapture: () => true,
       onPanResponderGrant: () => {
         pan.extractOffset();
         dragDistance.current = 0;
