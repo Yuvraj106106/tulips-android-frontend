@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { COLORS, TYPOGRAPHY } from '../constants/theme';
 import CompanionAvatar from '../components/CompanionAvatar';
 import { loadSettings } from '../services/settings';
@@ -9,16 +9,17 @@ import { useAssistantSessionLifecycle } from '../hooks/useAssistantSessionLifecy
 import { OverlayVoiceActionBanner } from '../components/OverlayVoiceActionBanner';
 import OverlayGestureContainer from '../components/OverlayGestureContainer';
 
-// AO-4 v2 (v49): avatar box now scales with the same screen-percentage popup size
-// used in OverlayGestureContainer.tsx / TulipVoiceInteractionSession.kt, instead of
-// a fixed 220x260 that assumed a fixed 260x340 popup. Keeps the avatar's proportion
-// within the popup consistent (~85% of popup width, ~76% of popup height) no matter
-// what the popup's actual size ends up being on a given device.
-const POPUP_WIDTH_PERCENT = 0.45;
-const POPUP_HEIGHT_PERCENT = 0.55;
-const screenDimensions = Dimensions.get('window');
-const AVATAR_WIDTH = screenDimensions.width * POPUP_WIDTH_PERCENT * 0.85;
-const AVATAR_HEIGHT = screenDimensions.height * POPUP_HEIGHT_PERCENT * 0.76;
+// AO-4 v4 (this session): previous AVATAR_WIDTH/AVATAR_HEIGHT were computed ONCE at
+// module load as fixed pixel values based on the old static 45%/55% collapsed-popup
+// percentages. That made the avatar's box completely unaware of the live
+// collapse<->expand animation in OverlayGestureContainer.tsx - no matter how big the
+// real container grew on swipe-up, the avatar box stayed pinned at its old small
+// fixed size, just with more empty space around it. Switched to percentage-based
+// sizing (relative to contentColumn, which now stretches to the real animated
+// container size) so the avatar visually grows/shrinks in sync with the actual
+// collapse/expand animation instead of being a stale snapshot.
+const AVATAR_WIDTH_PERCENT = '85%';
+const AVATAR_HEIGHT_PERCENT = '76%';
 
 export default function OverlayRoot() {
   const [companionId, setCompanionId] = useState<CompanionId | null>(null);
@@ -111,6 +112,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    width: '100%',
     backgroundColor: 'transparent',
     justifyContent: 'flex-end',
     alignItems: 'center',
@@ -118,12 +120,18 @@ const styles = StyleSheet.create({
   // AO-4 update: replaces the old opaque "glassCard" - no box/background behind the
   // avatar anymore, it renders straight onto the transparent popup per the reference
   // design (character floating on the transparent screen, no card).
+  // AO-4 v4: now stretches to the container's real (animated) size instead of
+  // shrink-wrapping its children, so avatarContainer's percentage sizing below
+  // resolves against the live collapsed/expanded bounds, not an undefined/zero size.
   contentColumn: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'flex-end',
     alignItems: 'center',
   },
   avatarContainer: {
-    width: AVATAR_WIDTH,
-    height: AVATAR_HEIGHT,
+    width: AVATAR_WIDTH_PERCENT,
+    height: AVATAR_HEIGHT_PERCENT,
     overflow: 'hidden',
   },
 });

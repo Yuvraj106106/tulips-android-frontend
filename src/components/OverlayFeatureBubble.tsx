@@ -98,9 +98,18 @@ export default function OverlayFeatureBubble() {
   // Floating-bubble drag state: pan tracks the bubble's top-left position within
   // its parent (the full popup area). Starts near the bottom-left, matching the
   // reference design's toggle placement.
+  //
+  // AO-4 v4 (this session): the old hardcoded `340 - BUBBLE_SIZE - 12` initial y
+  // assumed a static ~340px-tall collapsed popup and was never recalculated - so
+  // when the popup expanded to full-screen (post 0429053), the bubble stayed
+  // pinned at its old small-popup pixel position, which visually reads as
+  // "floated to the top" relative to the much taller expanded canvas. Now the
+  // bubble re-anchors to the real bottom edge on every layout/bounds change,
+  // as long as the user hasn't manually dragged it somewhere else.
   const [bounds, setBounds] = useState({ width: 260, height: 340 });
   const pan = useRef(new Animated.ValueXY({ x: 12, y: 340 - BUBBLE_SIZE - 12 })).current;
   const dragDistance = useRef(0);
+  const hasBeenDraggedRef = useRef(false);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -137,6 +146,10 @@ export default function OverlayFeatureBubble() {
         // Barely moved -> treat as a tap, toggle the expand/collapse row.
         if (dragDistance.current < TAP_MOVE_THRESHOLD) {
           setExpanded((prev) => !prev);
+        } else {
+          // A real drag happened - the user has taken ownership of the bubble's
+          // position, so stop auto re-anchoring it on future expand/collapse.
+          hasBeenDraggedRef.current = true;
         }
       },
     })
@@ -220,6 +233,9 @@ export default function OverlayFeatureBubble() {
         const { width, height } = e.nativeEvent.layout;
         if (width > 0 && height > 0) {
           setBounds({ width, height });
+          if (!hasBeenDraggedRef.current) {
+            pan.setValue({ x: 12, y: height - BUBBLE_SIZE - 12 });
+          }
         }
       }}
     >
