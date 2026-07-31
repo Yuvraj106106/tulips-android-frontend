@@ -30,10 +30,20 @@ export const companions: Record<CompanionId, CompanionConfig> = {
   krishna: {
     id: 'krishna',
     name: 'Krishna',
-    // Temporary small placeholder model for faster dev/testing.
-    // To restore original high-quality avatar, swap back to:
-    // modelAsset: require('../../assets/krishna_hq.glb'),
-    modelAsset: require('../../assets/placeholder_avatar.glb'),
+    // Swapped from the untextured placeholder_avatar.glb (dev/testing speed)
+    // to the real high-quality model + its texture. The placeholder had no
+    // texture, so CompanionAvatar.tsx's fallback path was kicking in
+    // (mat.color = themeColor), which is exactly why the avatar rendered as
+    // a solid flat #FFBF00 (amber/orange) blob instead of an actual
+    // textured character - not a bug in the window/sizing fix, just this
+    // wiring never having been flipped over yet. krishna_hq.glb +
+    // krishna_texture_diffuse.webp were already sitting in /assets, and
+    // CompanionAvatar.tsx already has NPOT-safety handling written
+    // specifically referencing krishna_hq's 1920x1920 diffuse map, so this
+    // pairing is the intended one - it just hadn't been wired up here yet.
+    // NOT yet re-verified on-device - this is the very next thing to check.
+    modelAsset: require('../../assets/krishna_hq.glb'),
+    textureAsset: require('../../assets/krishna_texture_diffuse.webp'),
     introVideoAsset: require('../../assets/placeholder_video.mp4'), // TODO: swap for real video when ready
     themeColor: '#FFBF00',
     backgroundColor: '#0a0a1a',
