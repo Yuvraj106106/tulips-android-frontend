@@ -17,13 +17,16 @@ interface OverlayGestureContainerProps {
   children: React.ReactNode;
 }
 
-// AO-4 v2 (v49): collapsed popup size is now a PERCENTAGE of the screen, matching
-// TulipVoiceInteractionSession.kt's popupWidthPercent/popupHeightPercent on the
-// native side. A fixed 260x340dp read as "too small" on real-device testing this
-// session because a fixed dp doesn't cover the same fraction of screen on every
-// device. Both sides must stay in sync - if you change one, change the other.
+// AO-4 v3 (this session): the native window is now ALWAYS full-screen (see
+// TulipVoiceInteractionSession.kt) - it no longer boxes RN into a small fixed
+// docked frame. That means `layout.width`/`layout.height` (from onLayout below)
+// now reliably equal the real full-screen bounds, and it's safe to animate all the
+// way out to them. The collapsed bubble's size/position (45%/55%, bottom-right,
+// with a margin) is purely a JS/CSS choice now - nothing on the native side needs
+// to match it anymore.
 const POPUP_WIDTH_PERCENT = 0.45;
 const POPUP_HEIGHT_PERCENT = 0.55;
+const POPUP_MARGIN = 8;
 const screenDimensions = Dimensions.get('window');
 const COLLAPSED_WIDTH = screenDimensions.width * POPUP_WIDTH_PERCENT;
 const COLLAPSED_HEIGHT = screenDimensions.height * POPUP_HEIGHT_PERCENT;
@@ -134,6 +137,21 @@ export default function OverlayGestureContainer({ children }: OverlayGestureCont
     outputRange: [COLLAPSED_HEIGHT, layout.height],
   });
 
+  // AO-4 v3: position the card itself, rather than relying on the outer flex
+  // container to center/bottom-align it. Collapsed = docked bottom-right with a
+  // margin (matches the old native-docked look). Expanded = flush to all four
+  // real screen edges (0 offset), which only makes sense now that the native
+  // window is genuinely full-screen and there's real space to grow into.
+  const animatedRight = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [POPUP_MARGIN, 0],
+  });
+
+  const animatedBottom = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [POPUP_MARGIN, 0],
+  });
+
   const closeButtonOpacity = animatedValue.interpolate({
     inputRange: [0.8, 1],
     outputRange: [0, 1],
@@ -141,13 +159,20 @@ export default function OverlayGestureContainer({ children }: OverlayGestureCont
   });
 
   return (
-    <View style={styles.outerContainer} onLayout={handleLayout} {...panResponder.panHandlers}>
+    <View
+      style={styles.outerContainer}
+      onLayout={handleLayout}
+      pointerEvents="box-none"
+      {...panResponder.panHandlers}
+    >
       <Animated.View
         style={[
           styles.animatedWrapper,
           {
             width: animatedWidth,
             height: animatedHeight,
+            right: animatedRight,
+            bottom: animatedBottom,
           },
         ]}
       >
@@ -173,13 +198,13 @@ const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
     backgroundColor: 'transparent',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
   },
   animatedWrapper: {
+    position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
+    overflow: 'hidden',
   },
   closeButtonContainer: {
     position: 'absolute',

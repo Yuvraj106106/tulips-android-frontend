@@ -45,36 +45,27 @@ class TulipVoiceInteractionSession(context: Context) : VoiceInteractionSession(c
     private var reactSurface: ReactSurface? = null
     private var eventListener: ReactInstanceEventListener? = null
 
-    // AO-4 v2 (this session, v49): popup size is now a PERCENTAGE of the real screen
-    // size, not a fixed dp value. The old fixed 260x340dp read correctly on the
-    // dev/test device used earlier, but real on-device testing this session showed it
-    // reading as "too small" on a different phone - a fixed dp size covers a
-    // different fraction of the screen depending on the device's actual screen
-    // size/density, so it doesn't generalize. Sizing off displayMetrics
-    // width/height fixes that: the popup now always reads as ~45% width / ~55%
-    // height of whatever screen it's on.
-    private val popupWidthPercent = 0.45f
-    private val popupHeightPercent = 0.55f
-    private val popupMarginDp = 8
-
-    private fun dpToPx(dp: Int): Int {
-        val density = context.resources.displayMetrics.density
-        return (dp * density).toInt()
-    }
-
-    private fun popupWidthPx(): Int {
-        val screenWidth = context.resources.displayMetrics.widthPixels
-        return (screenWidth * popupWidthPercent).toInt()
-    }
-
-    private fun popupHeightPx(): Int {
-        val screenHeight = context.resources.displayMetrics.heightPixels
-        return (screenHeight * popupHeightPercent).toInt()
-    }
+    // AO-4 v3 (this session): the native content view is now ALWAYS full-screen and
+    // transparent. Previously popupContainer was sized to a fixed 45%/55% box docked
+    // bottom-end - that meant the *actual Android window* never had more than that much
+    // touchable space, no matter what. The JS side's collapsed/expanded animation had no
+    // way to know that: it assumed it could grow to "the screen" size, so on expand it
+    // laid out buttons/close-affordance beyond the small window's real bounds - they
+    // rendered outside the touchable/visible area entirely (buttons not working, no
+    // collapse option, expand ratio going "off screen"). Root cause: two independent
+    // notions of "the window size" (native's small fixed box vs JS's full-screen
+    // assumption) that never matched.
+    //
+    // Fix: native always gives RN a full-screen, always-full-size, transparent, touch-
+    // passthrough-outside-content canvas. The "small bubble in the corner" vs
+    // "expanded" look is now purely a JS/CSS concern (see OverlayGestureContainer.tsx),
+    // animated freely within a canvas that's genuinely as big as the JS side thinks it
+    // is. Native no longer needs to know or care about collapsed/expanded percentages.
 
     override fun onCreateContentView(): View {
-        // Transparent root so the area outside the popup shows the screen behind it,
-        // instead of the old opaque #0A0A1A full-screen fill.
+        // Transparent, full-screen root. Nothing here is sized/docked anymore - RN
+        // content decides its own visible bubble size/position and can grow all the way
+        // to these real bounds without ever being clipped by a smaller native window.
         val rootContainer = FrameLayout(context).apply {
             setBackgroundColor(Color.TRANSPARENT)
         }
@@ -87,17 +78,12 @@ class TulipVoiceInteractionSession(context: Context) : VoiceInteractionSession(c
         val popupContainer = FrameLayout(context)
         popupHost = popupContainer
 
-        val margin = dpToPx(popupMarginDp)
         rootContainer.addView(
             popupContainer,
             FrameLayout.LayoutParams(
-                popupWidthPx(),
-                popupHeightPx(),
-                Gravity.BOTTOM or Gravity.END
-            ).apply {
-                bottomMargin = margin
-                marginEnd = margin
-            }
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
         )
 
         // Attempt to mount RN content
