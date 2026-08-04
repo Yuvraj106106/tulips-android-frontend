@@ -39,6 +39,10 @@ import com.facebook.react.interfaces.fabric.ReactSurface
  */
 class TulipVoiceInteractionSession(context: Context) : VoiceInteractionSession(context) {
 
+    companion object {
+        var activeInstance: TulipVoiceInteractionSession? = null
+    }
+
     private var container: FrameLayout? = null
     private var popupHost: FrameLayout? = null
     private var reactRootView: ReactRootView? = null
@@ -62,7 +66,12 @@ class TulipVoiceInteractionSession(context: Context) : VoiceInteractionSession(c
     // animated freely within a canvas that's genuinely as big as the JS side thinks it
     // is. Native no longer needs to know or care about collapsed/expanded percentages.
 
+    fun hideFromBridge() {
+        hide()
+    }
+
     override fun onCreateContentView(): View {
+        activeInstance = this
         // Transparent, full-screen root. Nothing here is sized/docked anymore - RN
         // content decides its own visible bubble size/position and can grow all the way
         // to these real bounds without ever being clipped by a smaller native window.
@@ -219,6 +228,9 @@ class TulipVoiceInteractionSession(context: Context) : VoiceInteractionSession(c
 
     override fun onDestroy() {
         super.onDestroy()
+        if (activeInstance == this) {
+            activeInstance = null
+        }
         val app = context.applicationContext as? ReactApplication
         if (app != null && eventListener != null) {
             val isBridgeless = ReactNativeNewArchitectureFeatureFlags.enableBridgelessArchitecture()
@@ -242,6 +254,6 @@ class TulipVoiceInteractionSession(context: Context) : VoiceInteractionSession(c
 
     override fun onShow(args: Bundle?, showFlags: Int) {
         super.onShow(args, showFlags)
+        activeInstance = this
     }
 }
-

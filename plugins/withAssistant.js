@@ -1,6 +1,7 @@
 const {
   withAndroidManifest,
   withDangerousMod,
+  withMainApplication,
 } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
@@ -10,6 +11,8 @@ const KOTLIN_FILES = [
   'TulipVoiceInteractionService.kt',
   'TulipVoiceInteractionSessionService.kt',
   'TulipVoiceInteractionSession.kt',
+  'TulipAssistantModule.kt',
+  'TulipAssistantPackage.kt',
 ];
 
 // Copies the hand-written Assistant (VoiceInteractionService) Kotlin files + the
@@ -99,8 +102,22 @@ function withAssistantManifest(config) {
   });
 }
 
+function withAssistantMainApplication(config) {
+  return withMainApplication(config, (config) => {
+    const contents = config.modResults.contents;
+    if (!contents.includes('add(TulipAssistantPackage())')) {
+      config.modResults.contents = contents.replace(
+        /PackageList\(this\)\.packages\.apply\s*\{/,
+        (match) => `${match}\n              add(TulipAssistantPackage())`
+      );
+    }
+    return config;
+  });
+}
+
 module.exports = function withAssistant(config) {
   config = withAssistantSource(config);
   config = withAssistantManifest(config);
+  config = withAssistantMainApplication(config);
   return config;
 };
