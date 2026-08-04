@@ -17,6 +17,10 @@ import MessageBubble from './MessageBubble';
 
 const BUBBLE_SIZE = 44;
 const TAP_MOVE_THRESHOLD = 6; // px of movement below which a gesture counts as a tap, not a drag
+// CSS anchor for the toolbar's resting position (bottom-left), matching the
+// `bubbleAnchor` style below. `pan` tracks drag offset relative to this.
+const ANCHOR_LEFT = 12;
+const ANCHOR_BOTTOM = 12;
 
 interface Message {
   id: string;
@@ -95,21 +99,24 @@ export default function OverlayFeatureBubble() {
 
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Floating-bubble drag state: pan tracks the bubble's top-left position within
-  // its parent (the full popup area). Starts near the bottom-left, matching the
-  // reference design's toggle placement.
+  // Floating-bubble drag state: `pan` now tracks a DELTA offset from the
+  // bubble's CSS-anchored resting position (bottom-left, see `bubbleAnchor`
+  // style), not an absolute top-left coordinate computed from measured layout.
   //
-  // AO-4 v4 (this session): the old hardcoded `340 - BUBBLE_SIZE - 12` initial y
-  // assumed a static ~340px-tall collapsed popup and was never recalculated - so
-  // when the popup expanded to full-screen (post 0429053), the bubble stayed
-  // pinned at its old small-popup pixel position, which visually reads as
-  // "floated to the top" relative to the much taller expanded canvas. Now the
-  // bubble re-anchors to the real bottom edge on every layout/bounds change,
-  // as long as the user hasn't manually dragged it somewhere else.
+  // v53 fix: the previous approach hardcoded an initial pan value assuming a
+  // static ~340px-tall collapsed popup, then corrected it to the real bottom
+  // only after `onLayout` fired with the live full-screen height. That's a
+  // race - if `onLayout` is ever delayed, skipped, or fires against a stale
+  // size (as suspected on the real outside-app launch path), the bubble was
+  // stuck rendering near the OLD hardcoded y, which reads as "floating near
+  // the top / above the avatar's head" on a real full-height screen. Anchoring
+  // the resting position via CSS `bottom`/`left` removes that dependency
+  // entirely - the bubble is correctly at the bottom on the very first frame,
+  // with `pan` only ever representing how far the user has dragged it away
+  // from that anchor.
   const [bounds, setBounds] = useState({ width: 260, height: 340 });
-  const pan = useRef(new Animated.ValueXY({ x: 12, y: 340 - BUBBLE_SIZE - 12 })).current;
+  const pan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
   const dragDistance = useRef(0);
-  const hasBeenDraggedRef = useRef(false);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -131,14 +138,21 @@ export default function OverlayFeatureBubble() {
       onPanResponderRelease: () => {
         pan.flattenOffset();
         // Clamp the resting position to stay fully within the popup bounds.
+        // `pan` is now a delta from the CSS-anchored resting spot
+        // (ANCHOR_LEFT, bottom: ANCHOR_BOTTOM), so convert to/from absolute
+        // popup-relative coordinates around that baseline for the clamp math.
         const anyPan = pan as any;
-        const currentX = anyPan.x._value;
-        const currentY = anyPan.y._value;
-        const clampedX = Math.max(0, Math.min(bounds.width - BUBBLE_SIZE, currentX));
-        const clampedY = Math.max(0, Math.min(bounds.height - BUBBLE_SIZE, currentY));
-        if (clampedX !== currentX || clampedY !== currentY) {
+        const baselineX = ANCHOR_LEFT;
+        const baselineY = bounds.height - BUBBLE_SIZE - ANCHOR_BOTTOM;
+        const currentAbsX = baselineX + anyPan.x._value;
+        const currentAbsY = baselineY + anyPan.y._value;
+        const clampedAbsX = Math.max(0, Math.min(bounds.width - BUBBLE_SIZE, currentAbsX));
+        const clampedAbsY = Math.max(0, Math.min(bounds.height - BUBBLE_SIZE, currentAbsY));
+        const clampedDx = clampedAbsX - baselineX;
+        const clampedDy = clampedAbsY - baselineY;
+        if (clampedAbsX !== currentAbsX || clampedAbsY !== currentAbsY) {
           Animated.spring(pan, {
-            toValue: { x: clampedX, y: clampedY },
+            toValue: { x: clampedDx, y: clampedDy },
             useNativeDriver: false,
           }).start();
         }
@@ -146,10 +160,6 @@ export default function OverlayFeatureBubble() {
         // Barely moved -> treat as a tap, toggle the expand/collapse row.
         if (dragDistance.current < TAP_MOVE_THRESHOLD) {
           setExpanded((prev) => !prev);
-        } else {
-          // A real drag happened - the user has taken ownership of the bubble's
-          // position, so stop auto re-anchoring it on future expand/collapse.
-          hasBeenDraggedRef.current = true;
         }
       },
     })
@@ -230,12 +240,14 @@ export default function OverlayFeatureBubble() {
       style={styles.floatingLayer}
       pointerEvents="box-none"
       onLayout={(e) => {
+        // Only used to bound how far the bubble can be dragged. The bubble's
+        // default resting position no longer depends on this firing at all -
+        // it's anchored via CSS (`bubbleAnchor` below), so it's correct on
+        // the very first frame even if this callback is delayed or never
+        // fires with a live size.
         const { width, height } = e.nativeEvent.layout;
         if (width > 0 && height > 0) {
           setBounds({ width, height });
-          if (!hasBeenDraggedRef.current) {
-            pan.setValue({ x: 12, y: height - BUBBLE_SIZE - 12 });
-          }
         }
       }}
     >
@@ -332,9 +344,16 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   bubbleAnchor: {
+    // Anchored to the bottom-left of the popup (matches ANCHOR_LEFT/
+    // ANCHOR_BOTTOM above). `pan`'s translateX/Y then only ever represents a
+    // drag delta away from this fixed resting spot - so it renders correctly
+    // at the bottom on the first frame with no dependency on onLayout timing.
+    // Growing content (e.g. the expanded icon row) pushes upward from this
+    // fixed bottom edge, which is what naturally overlays it on top of the
+    // avatar near the bottom without shifting the avatar's own layout.
     position: 'absolute',
-    top: 0,
-    left: 0,
+    left: ANCHOR_LEFT,
+    bottom: ANCHOR_BOTTOM,
   },
   expandToggle: {
     width: 44,
