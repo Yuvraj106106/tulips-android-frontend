@@ -256,4 +256,25 @@ class TulipVoiceInteractionSession(context: Context) : VoiceInteractionSession(c
         super.onShow(args, showFlags)
         activeInstance = this
     }
+
+    // Bug 1 fix (v54): VoiceInteractionSession.hide() only hides the session's window -
+    // it does NOT destroy the session or the mounted RN surface. Previously nothing here
+    // ever called finish(), so a hidden session instance could stick around and be shown
+    // again by the framework on a later assist trigger instead of a fresh onNewSession()
+    // being dispatched. onCreateContentView() (where the RN surface is mounted) only runs
+    // once per session instance, so reusing a hidden-not-destroyed session meant the user
+    // saw whatever the RN surface last rendered - stale/"frozen" content from the previous
+    // interaction, with no re-mount and no way for JS-side state to reset.
+    //
+    // Fix: explicitly finish() the session as soon as it's hidden, so onDestroy() runs its
+    // existing full cleanup (already correct, see above) and the next assist trigger is
+    // guaranteed to go through onNewSession() -> a brand-new TulipVoiceInteractionSession
+    // -> a fresh onCreateContentView() mount, instead of possibly reusing stale state.
+    // NOT YET VERIFIED ON DEVICE - this is a code-level diagnosis (no logcat captured for
+    // Bug 1 yet), so confirm the frozen-content symptom is actually gone after this before
+    // considering Bug 1 closed.
+    override fun onHide() {
+        super.onHide()
+        finish()
+    }
 }
