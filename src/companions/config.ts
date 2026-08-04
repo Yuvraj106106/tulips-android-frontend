@@ -43,7 +43,13 @@ export const companions: Record<CompanionId, CompanionConfig> = {
     // pairing is the intended one - it just hadn't been wired up here yet.
     // NOT yet re-verified on-device - this is the very next thing to check.
     modelAsset: require('../../assets/krishna_hq.glb'),
-    textureAsset: require('../../assets/krishna_texture_diffuse.webp'),
+    // Swapped from .webp to .png: the .webp decoded fine off-device (Python/PIL),
+    // but rendered fully black on-device via expo-gl/expo-three's loadTextureAsync —
+    // a known inconsistency with native WEBP pixel-upload support on some Android
+    // builds. PNG is decoded through a more universally-supported path. If this
+    // fixes the black-avatar symptom, root cause confirmed; if not, re-open and
+    // add pixel-data logging around loadTextureAsync instead.
+    textureAsset: require('../../assets/krishna_texture_diffuse.png'),
     introVideoAsset: require('../../assets/placeholder_video.mp4'), // TODO: swap for real video when ready
     themeColor: '#FFBF00',
     backgroundColor: '#0a0a1a',
